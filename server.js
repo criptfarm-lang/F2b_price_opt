@@ -1,5 +1,6 @@
 /**
  * Прайс-лист — Node.js Backend
+ * Basic Auth для МойСклад (логин:пароль в Base64)
  */
 
 const http = require('http');
@@ -10,7 +11,19 @@ const url = require('url');
 
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'pricelist-data.json');
-let MS_TOKEN = process.env.MS_TOKEN || '';
+
+// MS_LOGIN и MS_PASSWORD — переменные окружения на Railway
+// Либо сохраняются через админку
+let MS_LOGIN    = process.env.MS_LOGIN    || '';
+let MS_PASSWORD = process.env.MS_PASSWORD || '';
+
+function getAuthHeader() {
+  if (MS_LOGIN && MS_PASSWORD) {
+    const b64 = Buffer.from(`${MS_LOGIN}:${MS_PASSWORD}`).toString('base64');
+    return `Basic ${b64}`;
+  }
+  return '';
+}
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -47,15 +60,17 @@ function saveData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
-// ─── MOYSKLAD API ─────────────────────────────────────────────
-// МойСклад HEX-токены передаются как Bearer
+// ─── MOYSKLAD API (Basic Auth) ────────────────────────────────
 function msRequest(endpoint) {
   return new Promise((resolve, reject) => {
+    const auth = getAuthHeader();
+    if (!auth) { reject(new Error('Логин и пароль МойСклад не настроены')); return; }
+
     const options = {
       hostname: 'api.moysklad.ru',
       path: `/api/remap/1.2${endpoint}`,
       headers: {
-        'Authorization': `Bearer ${MS_TOKEN}`,
+        'Authorization': auth,
         'Accept': 'application/json;charset=utf-8',
       }
     };
@@ -67,9 +82,9 @@ function msRequest(endpoint) {
           const body = Buffer.concat(chunks).toString('utf8');
           const data = JSON.parse(body);
           if (res.statusCode !== 200) {
-            const errMsg = data.errors?.[0]?.error || `HTTP ${res.statusCode}`;
-            console.error(`MS API error [${res.statusCode}] ${endpoint}: ${errMsg}`);
-            reject(new Error(errMsg));
+            const msg = data.errors?.[0]?.error || `HTTP ${res.statusCode}`;
+            console.error(`MS API [${res.statusCode}] ${endpoint}: ${msg}`);
+            reject(new Error(msg));
           } else {
             resolve(data);
           }
@@ -86,33 +101,32 @@ function msPrice(val) {
   return Math.round(val / 100);
 }
 
-// Поиск товара по коду, артикулу или названию
 async function findProductByCode(code) {
   const encoded = encodeURIComponent(code);
 
-  // 1. По полю "Код"
+  // 1. По коду
   try {
     const d = await msRequest(`/entity/product?filter=code=${encoded}&limit=5&expand=uom`);
     if (d.rows?.length > 0) return parseProduct(d.rows[0]);
-  } catch(e) { console.log('search by code failed:', e.message); }
+  } catch(e) { console.log('by code:', e.message); }
 
-  // 2. По полю "Артикул"
+  // 2. По артикулу
   try {
     const d = await msRequest(`/entity/product?filter=article=${encoded}&limit=5&expand=uom`);
     if (d.rows?.length > 0) return parseProduct(d.rows[0]);
-  } catch(e) { console.log('search by article failed:', e.message); }
+  } catch(e) { console.log('by article:', e.message); }
 
   // 3. По названию
   try {
     const d = await msRequest(`/entity/product?filter=name=${encoded}&limit=5&expand=uom`);
     if (d.rows?.length > 0) return parseProduct(d.rows[0]);
-  } catch(e) { console.log('search by name failed:', e.message); }
+  } catch(e) { console.log('by name:', e.message); }
 
-  // 4. Модификации (variant)
+  // 4. Модификации
   try {
     const d = await msRequest(`/entity/variant?filter=code=${encoded}&limit=5&expand=uom`);
     if (d.rows?.length > 0) return parseProduct(d.rows[0]);
-  } catch(e) { console.log('search variant failed:', e.message); }
+  } catch(e) { console.log('variant:', e.message); }
 
   throw new Error('Товар не найден');
 }
@@ -120,8 +134,8 @@ async function findProductByCode(code) {
 function parseProduct(p) {
   let price = null;
   if (p.salePrices?.length > 0) {
-    const salePrice = p.salePrices.find(sp => sp.priceType?.name?.includes('продажи')) || p.salePrices[0];
-    price = msPrice(salePrice?.value);
+    const sp = p.salePrices.find(x => x.priceType?.name?.includes('продажи')) || p.salePrices[0];
+    price = msPrice(sp?.value);
   }
   return {
     id: p.id,
@@ -138,30 +152,27 @@ async function syncProducts(categories) {
   categories.forEach(cat => cat.products?.forEach(p => { if (p.code) codes.push(p.code); }));
   const updated = [];
   for (const code of codes) {
-    try {
-      const p = await findProductByCode(code);
-      updated.push(p);
-    } catch {}
+    try { updated.push(await findProductByCode(code)); } catch {}
   }
   return updated;
 }
 
-// ─── SERVE STATIC ─────────────────────────────────────────────
+// ─── STATIC ───────────────────────────────────────────────────
 const MIME = {
   '.html': 'text/html; charset=utf-8',
-  '.js': 'application/javascript',
-  '.css': 'text/css',
+  '.js':   'application/javascript',
+  '.css':  'text/css',
   '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
+  '.png':  'image/png',
+  '.jpg':  'image/jpeg',
+  '.svg':  'image/svg+xml',
+  '.ico':  'image/x-icon',
 };
 
 function serveStatic(res, filePath) {
-  const ext = path.extname(filePath);
   try {
     const content = fs.readFileSync(filePath);
+    const ext = path.extname(filePath);
     res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
     res.end(content);
   } catch {
@@ -181,27 +192,25 @@ async function router(req, res) {
   }
 
   if (pathname === '/api/pricelist' && req.method === 'POST') {
-    const body = await readBody(req);
-    saveData(body);
+    saveData(await readBody(req));
     return json(res, { ok: true });
   }
 
   if (pathname === '/api/moysklad/product' && req.method === 'GET') {
-    if (!MS_TOKEN) return err(res, 'Токен не настроен. Введите токен в разделе API МойСклад.');
+    if (!MS_LOGIN) return err(res, 'Логин МойСклад не настроен');
     try {
-      const product = await findProductByCode(query.code || '');
-      return json(res, product);
+      return json(res, await findProductByCode(query.code || ''));
     } catch(e) { return err(res, e.message, 404); }
   }
 
   if (pathname === '/api/moysklad/sync' && req.method === 'POST') {
-    if (!MS_TOKEN) return err(res, 'Токен не настроен');
+    if (!MS_LOGIN) return err(res, 'Логин МойСклад не настроен');
     const data = loadData();
     try {
       const updated = await syncProducts(data.categories);
       data.categories.forEach(cat => {
         cat.products?.forEach(p => {
-          const u = updated.find(up => up.code === p.code);
+          const u = updated.find(x => x.code === p.code);
           if (u) { p.price = u.price; p.name = u.name; p.unit = u.unit; }
         });
       });
@@ -210,28 +219,31 @@ async function router(req, res) {
     } catch(e) { return err(res, e.message, 500); }
   }
 
+  // Проверка подключения — принимает login+password
   if (pathname === '/api/moysklad/test' && req.method === 'POST') {
     const body = await readBody(req);
-    const tokenToTest = body.token || MS_TOKEN;
-    const savedToken = MS_TOKEN;
-    MS_TOKEN = tokenToTest;
+    const savedLogin    = MS_LOGIN;
+    const savedPassword = MS_PASSWORD;
+    if (body.login)    MS_LOGIN    = body.login;
+    if (body.password) MS_PASSWORD = body.password;
     try {
       const data = await msRequest('/entity/employee?limit=1');
       if (data.rows) {
-        MS_TOKEN = tokenToTest;
+        // Сохраняем в файл
         const config = loadData();
-        config._msToken = tokenToTest;
+        config._msLogin    = MS_LOGIN;
+        config._msPassword = MS_PASSWORD;
         saveData(config);
-        return json(res, { ok: true, account: data.rows[0]?.name });
+        return json(res, { ok: true, account: data.rows[0]?.fullName || data.rows[0]?.name });
       }
-      throw new Error('Неверный ответ от МойСклад');
+      throw new Error('Нет данных');
     } catch(e) {
-      MS_TOKEN = savedToken;
+      MS_LOGIN    = savedLogin;
+      MS_PASSWORD = savedPassword;
       return err(res, e.message, 401);
     }
   }
 
-  // Static
   if (pathname === '/' || pathname === '/index.html') return serveStatic(res, path.join(__dirname, 'index.html'));
   if (pathname === '/admin' || pathname === '/admin.html') return serveStatic(res, path.join(__dirname, 'admin.html'));
 
@@ -239,14 +251,15 @@ async function router(req, res) {
 }
 
 // ─── START ────────────────────────────────────────────────────
-const savedData = loadData();
-if (savedData._msToken && !MS_TOKEN) MS_TOKEN = savedData._msToken;
+const saved = loadData();
+if (saved._msLogin    && !MS_LOGIN)    MS_LOGIN    = saved._msLogin;
+if (saved._msPassword && !MS_PASSWORD) MS_PASSWORD = saved._msPassword;
 
 http.createServer(async (req, res) => {
   try { await router(req, res); }
   catch(e) { console.error(e); if (!res.headersSent) { res.writeHead(500); res.end('Internal error'); } }
 }).listen(PORT, () => {
-  console.log(`\n🐟 Прайс-лист: http://localhost:${PORT}`);
-  console.log(`⚙️  Админка:   http://localhost:${PORT}/admin\n`);
-  if (!MS_TOKEN) console.warn('⚠️  MS_TOKEN не задан');
+  console.log(`\n🐟 Прайс: http://localhost:${PORT}`);
+  console.log(`⚙️  Админ: http://localhost:${PORT}/admin\n`);
+  if (!MS_LOGIN) console.warn('⚠️  MS_LOGIN не задан');
 });
