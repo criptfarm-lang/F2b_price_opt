@@ -364,152 +364,162 @@ main {
   font-weight: 500;
 }
 
-/* ─── PRODUCT GRID ─── */
+/* ─── PRODUCT LIST (строчный) ─── */
 .product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 18px;
-}
-
-/* ─── PRODUCT CARD ─── */
-.product-card {
-  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow .22s, transform .22s, border-color .22s;
-}
-.product-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-3px);
-  border-color: transparent;
+  background: var(--white);
 }
 
-/* ─── CAROUSEL ─── */
-.carousel {
+/* ─── СТРОКА ТОВАРА ─── */
+.product-card {
+  display: grid;
+  grid-template-columns: 48px 1fr auto auto;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  transition: background .15s;
   position: relative;
-  aspect-ratio: 4/3;
-  background: var(--bg-card);
-  overflow: hidden;
+  min-height: 48px;
 }
-.carousel-track {
-  display: flex;
-  height: 100%;
-  transition: transform .38s cubic-bezier(.4,0,.2,1);
+.product-card:last-child { border-bottom: none; }
+.product-card:hover { background: var(--bg); }
+
+/* Миниатюра с превью */
+.p-thumb-wrap {
+  width: 48px; height: 48px;
+  position: relative;
+  flex-shrink: 0;
+  overflow: visible;
 }
-.carousel-slide {
-  min-width: 100%; height: 100%;
+.p-thumb-mini {
+  width: 48px; height: 48px;
   object-fit: cover;
   display: block;
+  cursor: zoom-in;
 }
-.carousel-slide.no-img {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.p-thumb-placeholder {
+  width: 48px; height: 48px;
   background: var(--bg-card);
-  min-width: 100%; height: 100%;
-}
-.carousel-btn {
-  position: absolute;
-  top: 50%; transform: translateY(-50%);
-  width: 30px; height: 30px;
-  background: rgba(255,255,255,.92);
-  border: none; border-radius: 50%;
-  cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity .2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,.15);
-  z-index: 2;
-  color: var(--navy);
 }
-.carousel:hover .carousel-btn { opacity: 1; }
-.carousel-btn.prev { left: 8px; }
-.carousel-btn.next { right: 8px; }
-.carousel-dots {
-  position: absolute; bottom: 8px;
-  left: 50%; transform: translateX(-50%);
-  display: flex; gap: 5px; z-index: 2;
-}
-.cdot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: rgba(255,255,255,.55);
-  cursor: pointer;
-  transition: background .2s, transform .2s;
-}
-.cdot.active { background: #fff; transform: scale(1.4); }
 
-/* ─── CARD BODY ─── */
-.card-body {
-  padding: 16px 18px 18px;
-  flex: 1; display: flex; flex-direction: column;
+/* Hover-превью */
+.p-thumb-wrap:hover .p-preview {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+.p-preview {
+  position: absolute;
+  left: 56px; top: 50%;
+  transform: translateY(-50%) scale(0.92);
+  width: 220px; height: 165px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  border: 2px solid var(--white);
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+/* Для первых строк превью вниз, для последних — вверх */
+.p-thumb-wrap.preview-up .p-preview {
+  top: auto; bottom: 0;
+  transform: translateY(0) scale(0.92);
+}
+.p-thumb-wrap.preview-up:hover .p-preview {
+  transform: translateY(0) scale(1);
+}
+
+/* Название и описание */
+.p-info {
+  padding: 10px 16px;
+  min-width: 0;
 }
 .product-name {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--navy);
   line-height: 1.3;
-  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .product-desc {
-  font-size: 13px;
-  color: var(--text-mid);
-  line-height: 1.5;
-  flex: 1;
-  margin-bottom: 14px;
-}
-.card-footer {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 8px;
-}
-.price-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  margin-bottom: 2px;
+  line-height: 1.4;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Артикул */
+.p-code {
+  padding: 0 16px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+
+/* Цена */
+.p-price-wrap {
+  padding: 0 20px 0 8px;
+  text-align: right;
+  white-space: nowrap;
+  min-width: 120px;
 }
 .price-val {
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 900;
   color: var(--navy);
   line-height: 1;
 }
-.price-val .cur { font-size: 16px; font-weight: 700; }
+.price-val .cur { font-size: 13px; font-weight: 700; }
 .price-unit {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text-muted);
   font-weight: 400;
 }
 .price-na {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-muted);
 }
-.card-sku {
-  font-size: 11px;
-  color: var(--text-muted);
-  text-align: right;
-  line-height: 1.4;
-}
 
-/* ─── ORDER BADGE ─── */
-.order-btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 7px 14px;
-  background: var(--orange);
-  color: #fff;
-  border: none; border-radius: 50px;
-  font-family: 'Golos Text', sans-serif;
-  font-size: 12.5px; font-weight: 600;
-  cursor: pointer;
-  transition: background .18s;
-  white-space: nowrap;
+/* Шапка таблицы */
+.product-grid-header {
+  display: grid;
+  grid-template-columns: 48px 1fr auto auto;
+  gap: 0;
+  padding: 8px 0;
+  background: var(--bg);
+  border-bottom: 2px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
 }
-.order-btn:hover { background: var(--orange-hover); }
+.product-grid-header span {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.product-grid-header .h-name  { padding-left: 16px; }
+.product-grid-header .h-code  { padding-right: 16px; text-align: right; min-width: 80px; }
+.product-grid-header .h-price { padding-right: 20px; text-align: right; min-width: 120px; }
+
+/* PDF — скрываем фото */
+@media print {
+  .p-thumb-wrap, .p-preview, .product-grid-header span:first-child { display: none !important; }
+  .product-card { grid-template-columns: 1fr auto auto; }
+}
 
 /* ─── SKELETONS ─── */
 .skeleton {
@@ -520,12 +530,10 @@ main {
 }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 .skel-card { background:var(--white); border:1.5px solid var(--border); border-radius:var(--radius); overflow:hidden; }
-.skel-img { height:200px; }
-.skel-body { padding:16px 18px 18px; }
-.skel-title { height:18px; width:72%; margin-bottom:10px; }
-.skel-desc  { height:13px; width:100%; margin-bottom:6px; }
-.skel-desc2 { height:13px; width:55%; margin-bottom:16px; }
-.skel-price { height:26px; width:38%; }
+.skel-body { padding:12px 16px; display:flex; align-items:center; gap:12px; }
+.skel-thumb { width:48px; height:48px; flex-shrink:0; }
+.skel-title { height:14px; width:50%; }
+.skel-price { height:14px; width:15%; margin-left:auto; }
 
 /* ─── EMPTY ─── */
 .empty-state {
@@ -694,16 +702,14 @@ footer {
   <div id="loadingState">
     <div class="cat-section">
       <div class="cat-section-header">
-        <div class="skeleton" style="height:20px;width:220px;"></div>
+        <div class="skeleton" style="height:20px;width:220px;border-radius:4px;"></div>
       </div>
       <div class="product-grid">
-        ${[1,2,3,4,5,6].map(()=>`
+        ${[1,2,3,4,5,6,7,8].map(()=>`
           <div class="skel-card">
-            <div class="skel-img skeleton"></div>
             <div class="skel-body">
+              <div class="skel-thumb skeleton"></div>
               <div class="skel-title skeleton"></div>
-              <div class="skel-desc skeleton"></div>
-              <div class="skel-desc2 skeleton"></div>
               <div class="skel-price skeleton"></div>
             </div>
           </div>`).join('')}
@@ -831,9 +837,20 @@ function render(data) {
 
     const grid = document.getElementById(`grid-${i}`);
     if (!cat.products?.length) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><p>Нет товаров в категории</p></div>`;
+      grid.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">Нет товаров в категории</div>`;
     } else {
-      cat.products.forEach(p => grid.appendChild(makeCard(p)));
+      // Header row
+      const hdr = document.createElement('div');
+      hdr.className = 'product-grid-header';
+      hdr.innerHTML = `<span></span><span class="h-name">Наименование</span><span class="h-code">Артикул</span><span class="h-price">Цена опт</span>`;
+      grid.appendChild(hdr);
+      // Rows
+      cat.products.forEach((p, pi) => {
+        const card = makeCard(p);
+        // Для последних 3 строк превью показываем вверх
+        if (pi >= cat.products.length - 3) card.querySelector('.p-thumb-wrap')?.classList.add('preview-up');
+        grid.appendChild(card);
+      });
     }
   });
 
@@ -844,31 +861,26 @@ function makeCard(p) {
   const card = document.createElement('div');
   card.className = 'product-card';
   const imgs = p.images||[];
+  const firstImg = imgs[0] || null;
 
   card.innerHTML = `
-    <div class="carousel" data-cur="0">
-      <div class="carousel-track">
-        ${imgs.length
-          ? imgs.map(s=>`<img class="carousel-slide" src="${s}" alt="${p.name}" loading="lazy">`).join('')
-          : `<div class="carousel-slide no-img"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`}
-      </div>
-      ${imgs.length>1?`
-        <button class="carousel-btn prev" onclick="cMove(this,-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
-        <button class="carousel-btn next" onclick="cMove(this,1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
-        <div class="carousel-dots">${imgs.map((_,i)=>`<div class="cdot${i===0?' active':''}" onclick="cGo(this.parentElement.parentElement,${i})"></div>`).join('')}</div>`:''}
+    <div class="p-thumb-wrap">
+      ${firstImg
+        ? `<img class="p-thumb-mini" src="${firstImg}" alt="${p.name}" loading="lazy">
+           <img class="p-preview" src="${firstImg}" alt="${p.name}" loading="lazy">`
+        : `<div class="p-thumb-placeholder">
+             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+           </div>`}
     </div>
-    <div class="card-body">
+    <div class="p-info">
       <div class="product-name">${p.name}</div>
-      <div class="product-desc">${p.description||''}</div>
-      <div class="card-footer">
-        <div>
-          <div class="price-label">Цена</div>
-          ${p.price!=null
-            ? `<div class="price-val">${fmtPrice(p.price)} <span class="cur">₽</span><span class="price-unit">${p.unit?' / '+p.unit:''}</span></div>`
-            : `<div class="price-na">По запросу</div>`}
-        </div>
-        <div class="card-sku">${p.code||''}</div>
-      </div>
+      ${p.description ? `<div class="product-desc">${p.description}</div>` : ''}
+    </div>
+    <div class="p-code">${p.code||''}</div>
+    <div class="p-price-wrap">
+      ${p.price!=null
+        ? `<div class="price-val">${fmtPrice(p.price)} <span class="cur">₽</span><span class="price-unit">${p.unit?' / '+p.unit:''}</span></div>`
+        : `<div class="price-na">По запросу</div>`}
     </div>`;
   return card;
 }
@@ -877,16 +889,7 @@ function fmtPrice(v) {
   if (!v && v!==0) return '—';
   return Number(v).toLocaleString('ru-RU');
 }
-function cMove(btn,dir) {
-  const c = btn.closest('.carousel');
-  const n = c.querySelectorAll('.carousel-slide').length;
-  cGo(c,(+c.dataset.cur+dir+n)%n);
-}
-function cGo(c,i) {
-  c.dataset.cur=i;
-  c.querySelector('.carousel-track').style.transform=`translateX(-${i*100}%)`;
-  c.querySelectorAll('.cdot').forEach((d,j)=>d.classList.toggle('active',j===i));
-}
+
 
 function setupScrollSpy() {
   const secs = document.querySelectorAll('.cat-section');
