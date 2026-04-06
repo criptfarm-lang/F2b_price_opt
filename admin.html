@@ -726,12 +726,19 @@ function renderPTable(idx) {
   return `<div class="ptable-wrap" style="margin-bottom:14px">
     <table class="ptable">
       <thead><tr>
+        <th style="width:32px"></th>
         <th>Фото</th><th>Наименование</th><th>Артикул</th>
         <th>Цена, ₽</th><th>Ед.</th><th></th>
       </tr></thead>
       <tbody>
         ${prods.map((p,pi)=>`
           <tr>
+            <td>
+              <div style="display:flex;flex-direction:column;gap:2px;">
+                <button class="btn btn-ghost btn-icon btn-sm" style="padding:3px 6px;font-size:11px;line-height:1" onclick="moveProduct(${idx},${pi},-1)" title="Вверх" ${pi===0?'disabled':''}>↑</button>
+                <button class="btn btn-ghost btn-icon btn-sm" style="padding:3px 6px;font-size:11px;line-height:1" onclick="moveProduct(${idx},${pi},1)" title="Вниз" ${pi===prods.length-1?'disabled':''}>↓</button>
+              </div>
+            </td>
             <td>${p.images?.length
               ?`<img class="p-thumb" src="${p.images[0]}">`
               :`<div class="p-no-thumb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`
@@ -747,6 +754,14 @@ function renderPTable(idx) {
       </tbody>
     </table>
   </div>`;
+}
+
+function moveProduct(catIdx, prodIdx, dir) {
+  const prods = S.categories[catIdx].products;
+  const to = prodIdx + dir;
+  if (to < 0 || to >= prods.length) return;
+  [prods[prodIdx], prods[to]] = [prods[to], prods[prodIdx]];
+  document.getElementById(`ptable-${catIdx}`).innerHTML = renderPTable(catIdx);
 }
 
 function toggleCat(i) {
