@@ -658,6 +658,7 @@ function renderCats() {
   S.categories.forEach((cat,idx) => {
     const div = document.createElement('div');
     div.className = 'cat-item';
+    div.dataset.catidx = idx;
     div.innerHTML = `
       <div class="cat-head" onclick="toggleCat(${idx})">
         <span class="drag-handle">⠿</span>
@@ -675,7 +676,7 @@ function renderCats() {
         <div class="form-row col1" style="margin-bottom:14px">
           <div class="field">
             <label>Название категории</label>
-            <input value="${cat.name||''}" oninput="S.categories[${idx}].name=this.value;document.querySelector('#cb-${idx}').previousElementSibling.querySelector('.cat-name').firstChild.textContent='${''}'">
+            <input value="${cat.name||''}" oninput="S.categories[${idx}].name=this.value;updateCatTitle(${idx},this.value)">
             </div>
         </div>
         <div id="ptable-${idx}">${renderPTable(idx)}</div>
@@ -762,6 +763,11 @@ function moveProduct(catIdx, prodIdx, dir) {
   if (to < 0 || to >= prods.length) return;
   [prods[prodIdx], prods[to]] = [prods[to], prods[prodIdx]];
   document.getElementById(`ptable-${catIdx}`).innerHTML = renderPTable(catIdx);
+}
+
+function updateCatTitle(idx, val) {
+  const head = document.querySelector(`[data-catidx="${idx}"] .cat-name`);
+  if (head) head.childNodes[0].textContent = val || '';
 }
 
 function toggleCat(i) {
