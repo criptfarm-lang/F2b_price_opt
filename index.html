@@ -384,7 +384,8 @@ main {
   border-bottom: 1px solid var(--border);
   transition: background .15s;
   position: relative;
-  min-height: 48px;
+  min-height: 52px;
+  overflow: visible;
 }
 .product-card:last-child { border-bottom: none; }
 .product-card:hover { background: var(--bg); }
@@ -509,10 +510,26 @@ main {
 .product-grid-header .h-code  { padding-right: 16px; text-align: right; min-width: 80px; }
 .product-grid-header .h-price { padding-right: 20px; text-align: right; min-width: 120px; }
 
-/* PDF — скрываем фото */
+/* PDF — скрываем фото, оптимизируем под печать */
 @media print {
-  .p-thumb-wrap, .p-preview, .product-grid-header span:first-child { display: none !important; }
-  .product-card { grid-template-columns: 1fr auto auto; }
+  .p-thumb-wrap, .p-preview { display: none !important; }
+  .product-card {
+    grid-template-columns: 1fr auto auto !important;
+    min-height: 36px !important;
+    break-inside: avoid;
+  }
+  .product-grid-header {
+    grid-template-columns: 1fr auto auto !important;
+  }
+  .product-grid-header span:first-child { display: none !important; }
+  .product-name { font-size: 12px !important; white-space: normal !important; }
+  .product-desc { font-size: 11px !important; }
+  .p-info { padding: 6px 12px !important; }
+  .p-code { font-size: 11px !important; padding-right: 12px !important; }
+  .p-price-wrap { padding-right: 0 !important; padding-left: 12px !important; }
+  .price-val { font-size: 13px !important; }
+  .cat-section { margin-bottom: 24px !important; }
+  .cat-section-title { font-size: 14px !important; }
 }
 
 /* ─── SKELETONS ─── */
@@ -911,18 +928,40 @@ function filterProducts(q) {
 
 async function downloadPDF() {
   const btn = document.querySelector('.btn-pdf');
-  btn.textContent = 'Формирование...';
+  btn.innerHTML = 'Формирование...';
   btn.disabled = true;
+
+  // Временно скрываем фото для PDF
+  document.querySelectorAll('.p-thumb-wrap').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.product-card').forEach(el => {
+    el.style.gridTemplateColumns = '1fr auto auto';
+  });
+  document.querySelectorAll('.product-grid-header').forEach(el => {
+    el.style.gridTemplateColumns = '1fr auto auto';
+    const first = el.querySelector('span:first-child');
+    if (first) first.style.display = 'none';
+  });
+
   const el = document.getElementById('priceContent');
   await html2pdf().set({
-    margin:[10,10],
-    filename:`прайс-лист_${new Date().toISOString().slice(0,10)}.pdf`,
-    image:{type:'jpeg',quality:.92},
-    html2canvas:{scale:2,useCORS:true},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-    pagebreak:{mode:['avoid-all','css','legacy']}
+    margin: [12, 12, 12, 12],
+    filename: `прайс-лист_${new Date().toISOString().slice(0,10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css'] }
   }).from(el).save();
-  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Скачать PDF`;
+
+  // Восстанавливаем фото
+  document.querySelectorAll('.p-thumb-wrap').forEach(el => el.style.display = '');
+  document.querySelectorAll('.product-card').forEach(el => el.style.gridTemplateColumns = '');
+  document.querySelectorAll('.product-grid-header').forEach(el => {
+    el.style.gridTemplateColumns = '';
+    const first = el.querySelector('span:first-child');
+    if (first) first.style.display = '';
+  });
+
+  btn.innerHTML = \`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Скачать PDF\`;
   btn.disabled = false;
 }
 
