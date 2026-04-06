@@ -82,7 +82,10 @@ function msPrice(val) {
 function parseProduct(p) {
   let price = null;
   if (p.salePrices?.length > 0) {
-    const sp = p.salePrices.find(x => x.priceType?.name?.includes('продажи')) || p.salePrices[0];
+    // Ищем "Цена опт" (приоритет), затем любую цену продажи, затем первую
+    const sp = p.salePrices.find(x => x.priceType?.name?.toLowerCase().includes('опт'))
+            || p.salePrices.find(x => x.priceType?.name?.toLowerCase().includes('продаж'))
+            || p.salePrices[0];
     price = msPrice(sp?.value);
   }
   return {
