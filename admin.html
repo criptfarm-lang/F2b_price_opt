@@ -538,20 +538,26 @@ body {
         <div class="card-head">
           <h3>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            API МойСклад
+            Подключение МойСклад
           </h3>
         </div>
         <div class="card-body">
           <div class="sync-bar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Токен хранится на сервере и используется для получения цен и названий товаров
+            Используется логин и пароль от МойСклад (Basic Auth). Данные хранятся на сервере.
           </div>
           <div class="form-row">
             <div class="field">
-              <label>Bearer Token МойСклад</label>
-              <input type="password" id="cfgToken" placeholder="Введите токен из настроек МойСклад → API">
-              <div class="field-hint">Настройки → Пользователи → Ваш аккаунт → Доступ к API → Создать токен</div>
+              <label>Логин МойСклад</label>
+              <input type="text" id="cfgLogin" placeholder="admin@vicpure" autocomplete="username">
+              <div class="field-hint">Обычно в формате логин@компания</div>
             </div>
+            <div class="field">
+              <label>Пароль МойСклад</label>
+              <input type="password" id="cfgPassword" placeholder="Ваш пароль" autocomplete="current-password">
+            </div>
+          </div>
+          <div class="form-row">
             <div class="field" style="align-self:flex-end">
               <button class="btn btn-navy" onclick="testToken()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
@@ -872,15 +878,21 @@ async function syncMs() {
   } catch { toast('Ошибка синхронизации. Проверьте токен.','error'); }
 }
 
-/* ─── TEST TOKEN ─── */
+/* ─── TEST LOGIN ─── */
 async function testToken() {
-  const token = document.getElementById('cfgToken').value.trim();
-  if (!token) { toast('Введите токен','error'); return; }
+  const login    = document.getElementById('cfgLogin').value.trim();
+  const password = document.getElementById('cfgPassword').value.trim();
+  if (!login || !password) { toast('Введите логин и пароль','error'); return; }
   try {
-    const r = await fetch(`${API}/api/moysklad/test`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
-    if (r.ok) toast('Подключение успешно ✓','success');
-    else throw new Error();
-  } catch { toast('Неверный токен','error'); }
+    const r = await fetch(`${API}/api/moysklad/test`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({login, password})
+    });
+    const d = await r.json();
+    if (r.ok) toast(`Подключено: ${d.account} ✓`,'success');
+    else toast(d.error || 'Неверный логин или пароль','error');
+  } catch { toast('Ошибка подключения','error'); }
 }
 
 init();
