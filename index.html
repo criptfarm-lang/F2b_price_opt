@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Прайс-лист — Fish to Business</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:       #1a2744;
+  --navy-mid:   #253460;
+  --navy-light: #e8ecf5;
+  --orange:     #F26522;
+  --orange-hover: #d95510;
+  --orange-light: #fff0e8;
+  --white:      #ffffff;
+  --bg:         #f5f6f8;
+  --bg-card:    #f0f2f7;
+  --text:       #1a2744;
+  --text-mid:   #4a5568;
+  --text-muted: #8898aa;
+  --border:     #e2e6f0;
+  --radius:     14px;
+  --radius-sm:  8px;
+  --shadow-sm:  0 2px 8px rgba(26,39,68,.07);
+  --shadow-md:  0 6px 24px rgba(26,39,68,.11);
+  --shadow-lg:  0 16px 48px rgba(26,39,68,.14);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Golos Text', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── TOP BAR ─── */
+.topbar {
+  background: var(--navy);
+  color: rgba(255,255,255,.7);
+  font-size: 12.5px;
+  padding: 0 40px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.topbar-left { display: flex; align-items: center; gap: 20px; }
+.topbar-left svg { opacity: .6; }
+.topbar-phone { color: #fff; font-weight: 600; font-size: 13px; letter-spacing: .01em; }
+.topbar-hours { opacity: .6; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-link {
+  color: rgba(255,255,255,.65);
+  text-decoration: none;
+  font-size: 12px;
+  transition: color .18s;
+}
+.topbar-link:hover { color: #fff; }
+
+/* ─── HEADER ─── */
+header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: var(--shadow-sm);
+}
+.header-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 40px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.logo-icon {
+  width: 42px; height: 42px;
+  background: var(--navy);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-text {}
+.logo-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--navy);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+.logo-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: .02em;
+}
+
+.header-search {
+  flex: 1;
+  position: relative;
+  max-width: 480px;
+}
+.header-search input {
+  width: 100%;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 50px;
+  padding: 10px 18px 10px 44px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.header-search input:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(242,101,34,.1);
+}
+.header-search input::placeholder { color: var(--text-muted); }
+.search-icon {
+  position: absolute;
+  left: 16px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s, transform .15s, box-shadow .18s;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(242,101,34,.35);
+}
+.btn-pdf:hover {
+  background: var(--orange-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(242,101,34,.4);
+}
+
+.update-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--navy-light);
+  border-radius: 50px;
+  font-size: 12px;
+  color: var(--navy-mid);
+  font-weight: 500;
+}
+.pulse-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ─── HERO BANNER ─── */
+.hero {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.hero-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 40px 40px 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+.hero-text {}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--orange-light);
+  color: var(--orange);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 50px;
+  margin-bottom: 16px;
+}
+.hero-title {
+  font-size: clamp(26px,3.5vw,42px);
+  font-weight: 900;
+  color: var(--navy);
+  line-height: 1.15;
+  letter-spacing: -.01em;
+  margin-bottom: 10px;
+}
+.hero-title span { color: var(--orange); }
+.hero-desc {
+  font-size: 15px;
+  color: var(--text-mid);
+  max-width: 420px;
+  line-height: 1.6;
+}
+.hero-stats {
+  display: flex;
+  gap: 28px;
+  margin-top: 24px;
+}
+.hero-stat {}
+.hero-stat-num {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--navy);
+  line-height: 1;
+}
+.hero-stat-num span { color: var(--orange); }
+.hero-stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.hero-date {
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  text-align: center;
+  min-width: 180px;
+}
+.hero-date-label { font-size: 11px; color: var(--text-muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+.hero-date-val { font-size: 15px; font-weight: 700; color: var(--navy); }
+
+/* ─── CATEGORY NAV ─── */
+.cat-nav-wrap {
+  background: var(--white);
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 70px;
+  z-index: 100;
+}
+.cat-nav-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cat-nav-inner::-webkit-scrollbar { display: none; }
+
+.cat-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .18s, border-color .18s;
+  margin-bottom: -2px;
+  letter-spacing: .01em;
+}
+.cat-tab:hover { color: var(--navy); }
+.cat-tab.active {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+.cat-count {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 50px;
+}
+.cat-tab.active .cat-count {
+  background: var(--orange-light);
+  color: var(--orange);
+}
+
+/* ─── MAIN ─── */
+main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 36px 40px 80px;
+}
+
+/* ─── SECTION ─── */
+.cat-section { margin-bottom: 56px; }
+.cat-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--border);
+}
+.cat-section-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--navy);
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cat-section-title::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 22px;
+  background: var(--orange);
+  border-radius: 2px;
+}
+.cat-section-count {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ─── PRODUCT GRID ─── */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 18px;
+}
+
+/* ─── PRODUCT CARD ─── */
+.product-card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .22s, transform .22s, border-color .22s;
+}
+.product-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  border-color: transparent;
+}
+
+/* ─── CAROUSEL ─── */
+.carousel {
+  position: relative;
+  aspect-ratio: 4/3;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+.carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform .38s cubic-bezier(.4,0,.2,1);
+}
+.carousel-slide {
+  min-width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.carousel-slide.no-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  min-width: 100%; height: 100%;
+}
+.carousel-btn {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px;
+  background: rgba(255,255,255,.92);
+  border: none; border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  z-index: 2;
+  color: var(--navy);
+}
+.carousel:hover .carousel-btn { opacity: 1; }
+.carousel-btn.prev { left: 8px; }
+.carousel-btn.next { right: 8px; }
+.carousel-dots {
+  position: absolute; bottom: 8px;
+  left: 50%; transform: translateX(-50%);
+  display: flex; gap: 5px; z-index: 2;
+}
+.cdot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,.55);
+  cursor: pointer;
+  transition: background .2s, transform .2s;
+}
+.cdot.active { background: #fff; transform: scale(1.4); }
+
+/* ─── CARD BODY ─── */
+.card-body {
+  padding: 16px 18px 18px;
+  flex: 1; display: flex; flex-direction: column;
+}
+.product-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+.product-desc {
+  font-size: 13px;
+  color: var(--text-mid);
+  line-height: 1.5;
+  flex: 1;
+  margin-bottom: 14px;
+}
+.card-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.price-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.price-val {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--navy);
+  line-height: 1;
+}
+.price-val .cur { font-size: 16px; font-weight: 700; }
+.price-unit {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.price-na {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.card-sku {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  line-height: 1.4;
+}
+
+/* ─── ORDER BADGE ─── */
+.order-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px;
+  background: var(--orange);
+  color: #fff;
+  border: none; border-radius: 50px;
+  font-family: 'Golos Text', sans-serif;
+  font-size: 12.5px; font-weight: 600;
+  cursor: pointer;
+  transition: background .18s;
+  white-space: nowrap;
+}
+.order-btn:hover { background: var(--orange-hover); }
+
+/* ─── SKELETONS ─── */
+.skeleton {
+  background: linear-gradient(90deg,var(--bg-card) 25%,var(--border) 50%,var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skel-card { background:var(--white); border:1.5px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.skel-img { height:200px; }
+.skel-body { padding:16px 18px 18px; }
+.skel-title { height:18px; width:72%; margin-bottom:10px; }
+.skel-desc  { height:13px; width:100%; margin-bottom:6px; }
+.skel-desc2 { height:13px; width:55%; margin-bottom:16px; }
+.skel-price { height:26px; width:38%; }
+
+/* ─── EMPTY ─── */
+.empty-state {
+  grid-column:1/-1; padding:60px 20px;
+  text-align:center; color:var(--text-muted);
+}
+.empty-state svg { opacity:.25; margin-bottom:12px; }
+
+/* ─── FOOTER ─── */
+footer {
+  background: var(--navy);
+  color: rgba(255,255,255,.6);
+}
+.footer-top {
+  max-width:1240px; margin:0 auto;
+  padding:40px 40px 32px;
+  display:flex; flex-wrap:wrap; gap:40px;
+  align-items:flex-start;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.footer-brand {}
+.footer-logo-title {
+  font-size:15px; font-weight:900; color:#fff;
+  letter-spacing:.04em; text-transform:uppercase;
+  margin-bottom:2px;
+}
+.footer-logo-sub { font-size:11.5px; color:rgba(255,255,255,.4); }
+.footer-tagline {
+  font-size:13px; color:rgba(255,255,255,.5);
+  margin-top:10px; max-width:220px; line-height:1.5;
+}
+
+.footer-links-group { flex:1; }
+.footer-links-title {
+  font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:rgba(255,255,255,.3); font-weight:700;
+  margin-bottom:14px;
+}
+.footer-links { display:flex; flex-direction:column; gap:9px; }
+.footer-link {
+  display:flex; align-items:center; gap:9px;
+  color:rgba(255,255,255,.65); text-decoration:none;
+  font-size:14px; font-weight:500;
+  transition:color .18s;
+}
+.footer-link:hover { color:#fff; }
+.footer-link .fl-icon {
+  width:32px; height:32px; border-radius:8px;
+  background:rgba(255,255,255,.08);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:background .18s;
+}
+.footer-link:hover .fl-icon { background:var(--orange); }
+
+.footer-bottom {
+  max-width:1240px; margin:0 auto;
+  padding:16px 40px;
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; color:rgba(255,255,255,.3);
+}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:768px){
+  .topbar { padding:0 16px; }
+  .header-search, .update-pill { display:none; }
+  .header-inner { padding:0 16px; }
+  .hero-inner { padding:24px 16px 20px; flex-direction:column; }
+  .hero-stats { flex-wrap:wrap; gap:16px; }
+  .cat-nav-inner { padding:0 16px; }
+  main { padding:24px 16px 60px; }
+  .product-grid { grid-template-columns:1fr 1fr; gap:12px; }
+  footer { }
+  .footer-top { padding:28px 16px 24px; flex-direction:column; gap:24px; }
+  .footer-bottom { padding:14px 16px; flex-direction:column; gap:6px; }
+}
+
+@media(max-width:480px){
+  .product-grid { grid-template-columns:1fr; }
+  .hero-title { font-size:22px; }
+}
+
+@media print {
+  .topbar,.cat-nav-wrap,header,.carousel-btn,.carousel-dots { display:none!important; }
+  .product-card { break-inside:avoid; box-shadow:none; border:1px solid #ddd; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    <span>Москва</span>
+    <span class="topbar-phone" id="tbPhone">8-800-700-27-03</span>
+    <span class="topbar-hours" id="tbHours">По будням с 9:00 до 18:00</span>
+  </div>
+  <div class="topbar-right">
+    <a class="topbar-link" href="#" id="tbSiteLink">Главный сайт</a>
+    <a class="topbar-link" href="admin.html">Управление</a>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a class="logo" href="#">
+      <div class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M21 7c0 4.418-4.03 8-9 8S3 11.418 3 7"/><path d="M21 7c-1-3-4-5-9-5S4 4 3 7"/><path d="M12 15v4M8 19h8"/></svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-title" id="logoTitle">Fish to Business</div>
+        <div class="logo-sub" id="logoSub">рыба для бизнеса</div>
+      </div>
+    </a>
+
+    <div class="header-search">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Найти товар в прайсе..." id="searchInput" oninput="filterProducts(this.value)">
+    </div>
+
+    <div class="header-right">
+      <div class="update-pill">
+        <span class="pulse-dot"></span>
+        <span id="updateTime">Актуально</span>
+      </div>
+      <button class="btn-pdf" onclick="downloadPDF()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Скачать PDF
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-eyebrow">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/></svg>
+        Актуальный прайс-лист
+      </div>
+      <h1 class="hero-title" id="heroTitle">Рыба и<br><span>морепродукты</span><br>для бизнеса</h1>
+      <p class="hero-desc" id="heroDesc">Прямые поставки без наценок. Цены обновляются из системы МойСклад в режиме реального времени.</p>
+      <div class="hero-stats" id="heroStats"></div>
+    </div>
+    <div class="hero-date">
+      <div class="hero-date-label">Дата прайса</div>
+      <div class="hero-date-val" id="priceDate">—</div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+        <div class="hero-date-label">Обновлено</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy)" id="updateDate">—</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CATEGORY NAV -->
+<div class="cat-nav-wrap">
+  <div class="cat-nav-inner" id="catNav"></div>
+</div>
+
+<!-- MAIN -->
+<main id="priceContent">
+  <!-- Skeletons while loading -->
+  <div id="loadingState">
+    <div class="cat-section">
+      <div class="cat-section-header">
+        <div class="skeleton" style="height:20px;width:220px;"></div>
+      </div>
+      <div class="product-grid">
+        ${[1,2,3,4,5,6].map(()=>`
+          <div class="skel-card">
+            <div class="skel-img skeleton"></div>
+            <div class="skel-body">
+              <div class="skel-title skeleton"></div>
+              <div class="skel-desc skeleton"></div>
+              <div class="skel-desc2 skeleton"></div>
+              <div class="skel-price skeleton"></div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer id="siteFooter">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="footer-logo-title" id="footerTitle">FISH TO BUSINESS</div>
+      <div class="footer-logo-sub">рыба для бизнеса</div>
+      <div class="footer-tagline" id="footerTagline">Прямые поставки рыбы и морепродуктов для вашего бизнеса</div>
+    </div>
+    <div class="footer-links-group">
+      <div class="footer-links-title">Контакты и ссылки</div>
+      <div class="footer-links" id="footerLinks"></div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span id="footerCopy">© 2024 Fish to Business</span>
+    <span>Все цены указаны без НДС</span>
+  </div>
+</footer>
+
+<script>
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+let allData = null;
+
+async function loadPriceList() {
+  try {
+    const res = await fetch(`${API_BASE}/api/pricelist`);
+    if (!res.ok) throw new Error();
+    allData = await res.json();
+    render(allData);
+  } catch {
+    document.getElementById('loadingState').innerHTML = `
+      <div class="empty-state">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p style="font-size:15px;font-weight:600;color:var(--navy);margin-bottom:6px;">Не удалось загрузить прайс</p>
+        <p style="font-size:13px;">Попробуйте обновить страницу</p>
+      </div>`;
+  }
+}
+
+function render(data) {
+  // Company info
+  const c = data.company || {};
+  if (c.name) {
+    document.getElementById('logoTitle').textContent = c.name;
+    document.getElementById('footerTitle').textContent = c.name.toUpperCase();
+    document.getElementById('footerCopy').textContent = `© ${new Date().getFullYear()} ${c.name}`;
+  }
+  if (c.tagline) document.getElementById('footerTagline').textContent = c.tagline;
+  if (c.heroDesc) document.getElementById('heroDesc').textContent = c.heroDesc;
+
+  // Dates
+  const now = new Date();
+  document.getElementById('priceDate').textContent = now.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('updateDate').textContent = now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('updateTime').textContent = 'Обновлено ' + now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+
+  // Stats
+  const cats = data.categories || [];
+  const totalProducts = cats.reduce((s,c)=>s+(c.products?.length||0),0);
+  if (totalProducts > 0) {
+    document.getElementById('heroStats').innerHTML = `
+      <div class="hero-stat"><div class="hero-stat-num">${cats.length}<span>+</span></div><div class="hero-stat-label">категорий</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">${totalProducts}<span>+</span></div><div class="hero-stat-label">позиций</div></div>`;
+  }
+
+  // Footer links
+  const iconSVG = {
+    website: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+    order:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`,
+    phone:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>`,
+    whatsapp:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>`,
+  };
+  const fl = document.getElementById('footerLinks');
+  (data.links||[]).forEach(link => {
+    fl.insertAdjacentHTML('beforeend',`
+      <a href="${link.url}" class="footer-link" ${link.type==='phone'?'':'target="_blank"'}>
+        <span class="fl-icon">${iconSVG[link.type]||iconSVG.website}</span>
+        ${link.label}
+      </a>`);
+  });
+
+  // Nav + content
+  const nav = document.getElementById('catNav');
+  const content = document.getElementById('priceContent');
+  content.innerHTML = '';
+
+  if (!cats.length) {
+    content.innerHTML = `<div class="empty-state"><p style="font-size:15px;font-weight:600;">Прайс ещё не настроен</p><p style="font-size:13px;margin-top:4px;">Откройте <a href="admin.html" style="color:var(--orange)">админку</a> и добавьте категории</p></div>`;
+    return;
+  }
+
+  cats.forEach((cat, i) => {
+    const id = `cat-${i}`;
+    // Tab
+    const tab = document.createElement('button');
+    tab.className = 'cat-tab' + (i===0?' active':'');
+    tab.dataset.target = id;
+    tab.innerHTML = `${cat.name} <span class="cat-count">${cat.products?.length||0}</span>`;
+    tab.onclick = () => {
+      document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
+    };
+    nav.appendChild(tab);
+
+    // Section
+    const sec = document.createElement('section');
+    sec.className = 'cat-section';
+    sec.id = id;
+    sec.innerHTML = `
+      <div class="cat-section-header">
+        <h2 class="cat-section-title">${cat.name}</h2>
+        <span class="cat-section-count">${cat.products?.length||0} позиций</span>
+      </div>
+      <div class="product-grid" id="grid-${i}"></div>`;
+    content.appendChild(sec);
+
+    const grid = document.getElementById(`grid-${i}`);
+    if (!cat.products?.length) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><p>Нет товаров в категории</p></div>`;
+    } else {
+      cat.products.forEach(p => grid.appendChild(makeCard(p)));
+    }
+  });
+
+  setupScrollSpy();
+}
+
+function makeCard(p) {
+  const card = document.createElement('div');
+  card.className = 'product-card';
+  const imgs = p.images||[];
+
+  card.innerHTML = `
+    <div class="carousel" data-cur="0">
+      <div class="carousel-track">
+        ${imgs.length
+          ? imgs.map(s=>`<img class="carousel-slide" src="${s}" alt="${p.name}" loading="lazy">`).join('')
+          : `<div class="carousel-slide no-img"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`}
+      </div>
+      ${imgs.length>1?`
+        <button class="carousel-btn prev" onclick="cMove(this,-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="carousel-btn next" onclick="cMove(this,1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <div class="carousel-dots">${imgs.map((_,i)=>`<div class="cdot${i===0?' active':''}" onclick="cGo(this.parentElement.parentElement,${i})"></div>`).join('')}</div>`:''}
+    </div>
+    <div class="card-body">
+      <div class="product-name">${p.name}</div>
+      <div class="product-desc">${p.description||''}</div>
+      <div class="card-footer">
+        <div>
+          <div class="price-label">Цена</div>
+          ${p.price!=null
+            ? `<div class="price-val">${fmtPrice(p.price)} <span class="cur">₽</span><span class="price-unit">${p.unit?' / '+p.unit:''}</span></div>`
+            : `<div class="price-na">По запросу</div>`}
+        </div>
+        <div class="card-sku">${p.code||''}</div>
+      </div>
+    </div>`;
+  return card;
+}
+
+function fmtPrice(v) {
+  if (!v && v!==0) return '—';
+  return Number(v).toLocaleString('ru-RU');
+}
+function cMove(btn,dir) {
+  const c = btn.closest('.carousel');
+  const n = c.querySelectorAll('.carousel-slide').length;
+  cGo(c,(+c.dataset.cur+dir+n)%n);
+}
+function cGo(c,i) {
+  c.dataset.cur=i;
+  c.querySelector('.carousel-track').style.transform=`translateX(-${i*100}%)`;
+  c.querySelectorAll('.cdot').forEach((d,j)=>d.classList.toggle('active',j===i));
+}
+
+function setupScrollSpy() {
+  const secs = document.querySelectorAll('.cat-section');
+  const tabs = document.querySelectorAll('.cat-tab');
+  new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting) tabs.forEach(t=>t.classList.toggle('active',t.dataset.target===e.target.id));
+    });
+  },{rootMargin:'-30% 0px -65% 0px'}).observe;
+  // Simple version
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting)tabs.forEach(t=>t.classList.toggle('active',t.dataset.target===e.target.id));});
+  },{rootMargin:'-30% 0px -65% 0px'});
+  secs.forEach(s=>io.observe(s));
+}
+
+function filterProducts(q) {
+  const query = q.toLowerCase().trim();
+  document.querySelectorAll('.product-card').forEach(card => {
+    const name = card.querySelector('.product-name')?.textContent.toLowerCase()||'';
+    const desc = card.querySelector('.product-desc')?.textContent.toLowerCase()||'';
+    card.style.display = (!query||name.includes(query)||desc.includes(query)) ? '' : 'none';
+  });
+}
+
+async function downloadPDF() {
+  const btn = document.querySelector('.btn-pdf');
+  btn.textContent = 'Формирование...';
+  btn.disabled = true;
+  const el = document.getElementById('priceContent');
+  await html2pdf().set({
+    margin:[10,10],
+    filename:`прайс-лист_${new Date().toISOString().slice(0,10)}.pdf`,
+    image:{type:'jpeg',quality:.92},
+    html2canvas:{scale:2,useCORS:true},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+    pagebreak:{mode:['avoid-all','css','legacy']}
+  }).from(el).save();
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Скачать PDF`;
+  btn.disabled = false;
+}
+
+loadPriceList();
+</script>
+</body>
+</html>
