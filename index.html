@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Прайс-лист — Fish to Business</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐟</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -931,74 +932,55 @@ async function downloadPDF() {
     let rows = '';
     (data.categories||[]).forEach(cat => {
       if (!cat.products?.length) return;
-      rows += `<tr><td colspan="3" class="cat-header">${cat.name}</td></tr>`;
+      rows += '<tr><td colspan="3" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #F26522;background:#f0f2f7;color:#1a2744;">' + cat.name + '</td></tr>';
       cat.products.forEach((p, i) => {
-        const price = p.price != null
-          ? Number(p.price).toLocaleString('ru-RU') + ' ₽' + (p.unit ? ' / ' + p.unit : '')
-          : 'По запросу';
-        rows += `<tr class="${i%2===0?'even':'odd'}">
-          <td class="td-name">${p.name}${p.description ? '<br><span class="desc">'+p.description+'</span>' : ''}</td>
-          <td class="td-code">${p.code||'—'}</td>
-          <td class="td-price">${price}</td>
-        </tr>`;
+        const price = p.price != null ? Number(p.price).toLocaleString('ru-RU') + ' ₽' + (p.unit ? ' / ' + p.unit : '') : 'По запросу';
+        rows += '<tr style="background:' + (i%2===0?'#fff':'#fafaf9') + '">'
+          + '<td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;font-size:10px;">' + p.name + '</td>'
+          + '<td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:10px;color:#8898aa;white-space:nowrap;width:80px;">' + (p.code||'—') + '</td>'
+          + '<td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:10px;font-weight:700;white-space:nowrap;width:100px;">' + price + '</td>'
+          + '</tr>';
       });
     });
 
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
-    <style>
-      @page { margin: 12mm 15mm; }
-      * { box-sizing: border-box; }
-      body { font-family: Arial, sans-serif; color: #1a2744; margin: 0; padding: 20px 24px; font-size: 10px; }
-      .wrap { max-width: 680px; margin: 0 auto; }
-      .header { border-bottom: 3px solid #F26522; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
-      .co-name { font-size: 14px; font-weight: 700; text-transform: uppercase; }
-      .co-sub { font-size: 9px; color: #8898aa; margin-top: 1px; }
-      .co-contacts { font-size: 9px; color: #4a5568; margin-top: 3px; line-height: 1.5; }
-      .date-block { text-align: right; font-size: 9px; color: #4a5568; line-height: 1.6; white-space: nowrap; }
-      .date-block b { font-size: 11px; color: #1a2744; }
-      table { width: 100%; border-collapse: collapse; }
-      th { text-align: left; padding: 4px 8px; font-size: 8px; text-transform: uppercase; color: #8898aa; border-bottom: 1px solid #e2e6f0; background: #f5f6f8; letter-spacing: .04em; }
-      th:last-child, th:nth-child(2) { text-align: right; }
-      td { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; }
-      .td-code { text-align: right; white-space: nowrap; color: #8898aa; width: 70px; }
-      .td-price { text-align: right; white-space: nowrap; font-weight: 700; width: 90px; }
-      .td-name { width: auto; }
-      .even { background: #fff; }
-      .odd { background: #fafaf9; }
-      .cat-header { padding: 5px 8px 3px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 2px solid #F26522; background: #f0f2f7; color: #1a2744; }
-      .desc { font-size: 8px; color: #8898aa; }
-      .footer { margin-top: 10px; padding-top: 5px; border-top: 1px solid #e2e6f0; font-size: 8px; color: #8898aa; display: flex; justify-content: space-between; }
-    </style></head><body>
-    <div class="wrap">
-    <div class="header">
-      <div>
-        <div class="co-name">${co.name||'FISH TO BUSINESS'}</div>
-        ${co.tagline?'<div class="co-sub">'+co.tagline+'</div>':''}
-        <div class="co-contacts">${phone}<br>${address}</div>
-      </div>
-      <div class="date-block">
-        <b>Прайс-лист</b><br>от ${date}
-      </div>
-    </div>
-    <table>
-      <thead><tr><th>Наименование</th><th>Артикул</th><th>Цена опт</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="footer">
-      <span>Все цены указаны с НДС</span>
-      <span>${co.name||'Fish to Business'} · ${date}</span>
-    </div>
-    </div>
-    </body></html>`;
+    const html = '<div style="font-family:Arial,sans-serif;color:#1a2744;padding:0;">'
+      + '<div style="border-bottom:3px solid #F26522;padding-bottom:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:flex-start;">'
+      + '<div><div style="font-size:15px;font-weight:700;text-transform:uppercase;">' + (co.name||'FISH TO BUSINESS') + '</div>'
+      + (co.tagline ? '<div style="font-size:9px;color:#8898aa;margin-top:1px;">' + co.tagline + '</div>' : '')
+      + '<div style="font-size:9px;color:#4a5568;margin-top:3px;line-height:1.6;">' + phone + '<br>' + address + '</div></div>'
+      + '<div style="text-align:right;font-size:9px;color:#4a5568;"><b style="font-size:11px;color:#1a2744;">Прайс-лист</b><br>от ' + date + '</div></div>'
+      + '<table style="width:100%;border-collapse:collapse;">'
+      + '<thead><tr style="background:#f5f6f8;">'
+      + '<th style="text-align:left;padding:4px 8px;font-size:8px;text-transform:uppercase;color:#8898aa;border-bottom:1px solid #e2e6f0;letter-spacing:.04em;">Наименование</th>'
+      + '<th style="text-align:right;padding:4px 8px;font-size:8px;text-transform:uppercase;color:#8898aa;border-bottom:1px solid #e2e6f0;width:80px;">Артикул</th>'
+      + '<th style="text-align:right;padding:4px 8px;font-size:8px;text-transform:uppercase;color:#8898aa;border-bottom:1px solid #e2e6f0;width:100px;">Цена опт</th>'
+      + '</tr></thead><tbody>' + rows + '</tbody></table>'
+      + '<div style="margin-top:10px;padding-top:6px;border-top:1px solid #e2e6f0;font-size:8px;color:#8898aa;display:flex;justify-content:space-between;">'
+      + '<span>Все цены указаны с НДС</span><span>' + (co.name||'Fish to Business') + ' · ' + date + '</span></div></div>';
 
-    const win = window.open('', '_blank');
-    win.document.write(fullHtml);
-    win.document.close();
-    win.focus();
-    setTimeout(() => { win.print(); }, 600);
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;top:0;left:0;width:210mm;background:#fff;z-index:99999;padding:15mm 12mm;box-sizing:border-box;';
+    wrapper.innerHTML = html;
+    document.body.appendChild(wrapper);
+    document.body.style.overflow = 'hidden';
+
+    await new Promise(r => setTimeout(r, 400));
+
+    await html2pdf().set({
+      margin: 0,
+      filename: 'прайс-лист_' + new Date().toISOString().slice(0,10) + '.pdf',
+      image: {type:'jpeg', quality:0.95},
+      html2canvas: {scale:2, useCORS:true, logging:false, width:794, windowWidth:794},
+      jsPDF: {unit:'mm', format:'a4', orientation:'portrait'},
+      pagebreak: {mode:'css', avoid:'tr'}
+    }).from(wrapper).save();
+
+    document.body.removeChild(wrapper);
+    document.body.style.overflow = '';
 
   } catch(e) {
-    alert('Ошибка: ' + e.message);
+    console.error(e);
+    alert('Ошибка PDF: ' + e.message);
   }
 
   btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Скачать PDF';
