@@ -957,12 +957,19 @@ function closeEditModal() {
   _editCat = null; _editProd = null;
 }
 
-async function handleEditFiles(files) {
+function handleEditFiles(files) {
   const grid = document.getElementById('editImgGrid');
-  toast('Загружаем фото...', '');
-  const urls = await uploadImages(files);
-  if (urls.length) addThumbsToGrid(grid, urls);
-  else toast('Ошибка загрузки фото', 'error');
+  [...files].forEach(f => {
+    if (!f.type.startsWith('image/')) return;
+    const fr = new FileReader();
+    fr.onload = e => {
+      const w = document.createElement('div');
+      w.className = 'img-thumb';
+      w.innerHTML = '<img src="' + e.target.result + '"><button class="img-rm" onclick="this.parentElement.remove()">✕</button>';
+      grid.appendChild(w);
+    };
+    fr.readAsDataURL(f);
+  });
 }
 
 function saveEdit() {
