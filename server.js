@@ -5,7 +5,16 @@ const path = require('path');
 const url = require('url');
 
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'pricelist-data.json');
+// Используем Volume если есть, иначе локальная папка
+const DATA_DIR = process.env.DATA_DIR || '/app/data';
+const DATA_FILE = (() => {
+  try {
+    if (!require('fs').existsSync(DATA_DIR)) require('fs').mkdirSync(DATA_DIR, { recursive: true });
+    return path.join(DATA_DIR, 'pricelist-data.json');
+  } catch {
+    return path.join(__dirname, 'pricelist-data.json');
+  }
+})();
 
 // Токен из переменной окружения MOYSKLAD_TOKEN (как в других ваших проектах)
 let MS_TOKEN = process.env.MOYSKLAD_TOKEN || '';
