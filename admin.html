@@ -972,14 +972,15 @@ function handleEditFiles(files) {
   });
 }
 
-function saveEdit() {
+async function saveEdit() {
   if (_editCat === null || _editProd === null) return;
   const p = S.categories[_editCat].products[_editProd];
   p.description = document.getElementById('editDesc').value;
   p.images = [...document.querySelectorAll('#editImgGrid img')].map(i => i.src);
   document.getElementById(`ptable-${_editCat}`).innerHTML = renderPTable(_editCat);
   closeEditModal();
-  toast('Изменения сохранены. Не забудьте нажать «Сохранить»!', 'success');
+  // Автоматически сохраняем на сервер
+  await saveAll(null);
 }
 
 // Setup drag-and-drop for edit modal
