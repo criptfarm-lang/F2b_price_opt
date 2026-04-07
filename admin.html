@@ -523,6 +523,12 @@ body {
               <input id="cfgHours" placeholder="По будням с 9:00 до 18:00">
             </div>
           </div>
+          <div class="form-row col1">
+            <div class="field">
+              <label>Адрес</label>
+              <input id="cfgAddress" placeholder="Московская обл., Раменский р-н, п. Ильинский, ул. Пролетарская, д 49">
+            </div>
+          </div>
 
           <div style="border-top:1.5px solid var(--border);margin:20px 0 18px;"></div>
           <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;">Ссылки в подвале</div>
@@ -596,6 +602,8 @@ function fillSettings() {
   document.getElementById('cfgDesc').value    = c.heroDesc||'';
   document.getElementById('cfgPhone').value   = c.phone||'';
   document.getElementById('cfgHours').value   = c.hours||'';
+  const addrEl = document.getElementById('cfgAddress');
+  if (addrEl) addrEl.value = c.address||'';
   renderLinks();
 }
 
@@ -876,6 +884,7 @@ async function saveAll(e) {
     heroDesc:document.getElementById('cfgDesc').value,
     phone:   document.getElementById('cfgPhone').value,
     hours:   document.getElementById('cfgHours').value,
+    address: document.getElementById('cfgAddress')?.value || '',
   };
   const payload = { company:S.company, links:S.links, categories:S.categories.map(c=>({...c,_open:undefined})) };
   try {

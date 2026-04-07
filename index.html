@@ -918,7 +918,6 @@ async function downloadPDF() {
   btn.disabled = true;
 
   try {
-    // Берём данные
     if (!allData || !allData.categories?.length) {
       const r = await fetch('/api/pricelist');
       allData = await r.json();
@@ -926,8 +925,9 @@ async function downloadPDF() {
     const data = allData;
     const co = data.company || {};
     const date = new Date().toLocaleDateString('ru-RU', {day:'numeric',month:'long',year:'numeric'});
+    const phone = co.phone || '8-800-700-27-03';
+    const address = co.address || 'Московская обл., Раменский р-н, п. Ильинский, ул. Пролетарская, д 49';
 
-    // Строим HTML для PDF
     let rows = '';
     (data.categories||[]).forEach(cat => {
       if (!cat.products?.length) return;
@@ -946,35 +946,48 @@ async function downloadPDF() {
 
     const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
     <style>
-      body { font-family: Arial, sans-serif; color: #1a2744; margin: 0; padding: 20px; font-size: 11px; }
-      .header { border-bottom: 3px solid #F26522; padding-bottom: 8px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; }
-      .co-name { font-size: 16px; font-weight: 700; text-transform: uppercase; }
-      .co-sub { font-size: 10px; color: #8898aa; margin-top: 2px; }
-      .date-block { text-align: right; font-size: 10px; color: #4a5568; }
+      @page { margin: 15mm 20mm; }
+      * { box-sizing: border-box; }
+      body { font-family: Arial, sans-serif; color: #1a2744; margin: 0; padding: 0; font-size: 10px; }
+      .header { border-bottom: 3px solid #F26522; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+      .co-name { font-size: 15px; font-weight: 700; text-transform: uppercase; }
+      .co-sub { font-size: 9px; color: #8898aa; margin-top: 2px; }
+      .co-contacts { font-size: 9px; color: #4a5568; margin-top: 4px; line-height: 1.5; }
+      .date-block { text-align: right; font-size: 9px; color: #4a5568; line-height: 1.6; }
+      .date-block b { font-size: 11px; color: #1a2744; }
       table { width: 100%; border-collapse: collapse; }
-      th { text-align: left; padding: 5px 8px; font-size: 9px; text-transform: uppercase; color: #8898aa; border-bottom: 1px solid #e2e6f0; background: #f5f6f8; }
+      th { text-align: left; padding: 4px 8px; font-size: 8px; text-transform: uppercase; color: #8898aa; border-bottom: 1px solid #e2e6f0; background: #f5f6f8; letter-spacing: .04em; }
       th:last-child, th:nth-child(2) { text-align: right; }
-      td { padding: 5px 8px; border-bottom: 1px solid #e2e6f0; }
-      .td-code, .td-price { text-align: right; white-space: nowrap; }
-      .td-price { font-weight: 700; }
+      td { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; }
+      .td-code { text-align: right; white-space: nowrap; color: #8898aa; width: 80px; }
+      .td-price { text-align: right; white-space: nowrap; font-weight: 700; width: 100px; }
+      .td-name { width: auto; }
       .even { background: #fff; }
       .odd { background: #fafaf9; }
-      .cat-header { padding: 8px 8px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid #F26522; background: #f0f2f7; }
-      .desc { font-size: 9px; color: #8898aa; }
-      .footer { margin-top: 12px; padding-top: 6px; border-top: 1px solid #e2e6f0; font-size: 9px; color: #8898aa; display: flex; justify-content: space-between; }
+      .cat-header { padding: 6px 8px 3px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 2px solid #F26522; background: #f0f2f7; color: #1a2744; }
+      .desc { font-size: 8px; color: #8898aa; }
+      .footer { margin-top: 10px; padding-top: 6px; border-top: 1px solid #e2e6f0; font-size: 8px; color: #8898aa; display: flex; justify-content: space-between; }
     </style></head><body>
     <div class="header">
-      <div><div class="co-name">${co.name||'FISH TO BUSINESS'}</div>${co.tagline?'<div class="co-sub">'+co.tagline+'</div>':''}</div>
-      <div class="date-block">${co.phone?'<b>'+co.phone+'</b><br>':''}Прайс-лист от ${date}</div>
+      <div>
+        <div class="co-name">${co.name||'FISH TO BUSINESS'}</div>
+        ${co.tagline?'<div class="co-sub">'+co.tagline+'</div>':''}
+        <div class="co-contacts">${phone}<br>${address}</div>
+      </div>
+      <div class="date-block">
+        <b>Прайс-лист</b><br>от ${date}
+      </div>
     </div>
     <table>
       <thead><tr><th>Наименование</th><th>Артикул</th><th>Цена опт</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div class="footer"><span>Все цены указаны с НДС</span><span>${co.name||'Fish to Business'} · ${date}</span></div>
+    <div class="footer">
+      <span>Все цены указаны с НДС</span>
+      <span>${co.name||'Fish to Business'} · ${date}</span>
+    </div>
     </body></html>`;
 
-    // Открываем в новой вкладке и печатаем
     const win = window.open('', '_blank');
     win.document.write(fullHtml);
     win.document.close();
