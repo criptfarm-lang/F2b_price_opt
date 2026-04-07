@@ -977,8 +977,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Close modal on backdrop click
-document.getElementById('editModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('editModal')) closeEditModal();
+const _modal = document.getElementById('editModal');
+if (_modal) _modal.addEventListener('click', e => {
+  if (e.target === _modal) closeEditModal();
 });
 </script>
 
