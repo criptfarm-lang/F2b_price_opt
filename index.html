@@ -688,8 +688,8 @@ footer {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/></svg>
         Актуальный прайс-лист
       </div>
-      <h1 class="hero-title" id="heroTitle">Рыба и<br><span>морепродукты</span><br>для бизнеса</h1>
-      <p class="hero-desc" id="heroDesc">Прямые поставки без наценок. Цены обновляются из системы МойСклад в режиме реального времени.</p>
+      <h1 class="hero-title" id="heroTitle">РЫБА ДЛЯ<br><span>БИЗНЕСА</span></h1>
+      <p class="hero-desc" id="heroDesc">рыбное производство</p>
       <div class="hero-stats" id="heroStats"></div>
     </div>
     <div class="hero-date">
@@ -930,36 +930,83 @@ async function downloadPDF() {
   btn.innerHTML = 'Формирование...';
   btn.disabled = true;
 
-  // Временно скрываем фото для PDF
-  document.querySelectorAll('.p-thumb-wrap').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.product-card').forEach(el => {
-    el.style.gridTemplateColumns = '1fr auto auto';
-  });
-  document.querySelectorAll('.product-grid-header').forEach(el => {
-    el.style.gridTemplateColumns = '1fr auto auto';
-    const first = el.querySelector('span:first-child');
-    if (first) first.style.display = 'none';
+  // Строим чистый HTML для PDF
+  const data = allData || {};
+  const company = data.company || {};
+  const cats = data.categories || [];
+  const date = new Date().toLocaleDateString('ru-RU', {day:'numeric',month:'long',year:'numeric'});
+  const phone = company.phone || '';
+
+  let html = `
+  <div style="font-family:'Golos Text',Arial,sans-serif;color:#1a2744;padding:0;margin:0;">
+    <!-- Шапка -->
+    <div style="border-bottom:3px solid #F26522;padding-bottom:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;">
+      <div>
+        <div style="font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.03em;">${company.name||'РЫБА ДЛЯ БИЗНЕСА'}</div>
+        <div style="font-size:13px;color:#8898aa;margin-top:3px;">${company.tagline||'рыбное производство'}</div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#4a5568;">
+        ${phone ? '<div style="font-weight:700;font-size:14px;color:#1a2744;">'+phone+'</div>' : ''}
+        <div>Прайс-лист от ${date}</div>
+      </div>
+    </div>`;
+
+  // Категории и товары
+  cats.forEach(cat => {
+    if (!cat.products?.length) return;
+    html += `
+    <div style="margin-bottom:20px;page-break-inside:avoid;">
+      <div style="font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#1a2744;
+                  border-left:4px solid #F26522;padding-left:10px;margin-bottom:8px;">${cat.name}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:#f5f6f8;">
+            <th style="text-align:left;padding:7px 10px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#8898aa;border-bottom:1px solid #e2e6f0;">Наименование</th>
+            <th style="text-align:right;padding:7px 10px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#8898aa;border-bottom:1px solid #e2e6f0;white-space:nowrap;">Артикул</th>
+            <th style="text-align:right;padding:7px 10px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#8898aa;border-bottom:1px solid #e2e6f0;white-space:nowrap;">Цена опт</th>
+          </tr>
+        </thead>
+        <tbody>`;
+    cat.products.forEach((p, i) => {
+      const bg = i % 2 === 0 ? '#fff' : '#fafaf9';
+      const price = p.price != null ? Number(p.price).toLocaleString('ru-RU') + ' ₽' + (p.unit ? ' / '+p.unit : '') : 'По запросу';
+      html += `
+          <tr style="background:${bg};">
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e6f0;font-weight:600;">${p.name}${p.description?'<div style="font-size:10px;color:#8898aa;margin-top:1px;">'+p.description+'</div>':''}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e6f0;text-align:right;color:#8898aa;">${p.code||'—'}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e6f0;text-align:right;font-weight:900;color:#1a2744;white-space:nowrap;">${price}</td>
+          </tr>`;
+    });
+    html += `</tbody></table></div>`;
   });
 
-  const el = document.getElementById('priceContent');
+  // Подвал
+  html += `
+    <div style="margin-top:24px;padding-top:12px;border-top:1px solid #e2e6f0;font-size:10px;color:#8898aa;display:flex;justify-content:space-between;">
+      <span>Все цены указаны без НДС</span>
+      <span>${company.name||'Fish to Business'} · ${date}</span>
+    </div>
+  </div>`;
+
+  // Создаём невидимый но рендеримый контейнер
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;';
+  wrapper.innerHTML = html;
+  document.body.appendChild(wrapper);
+
+  // Даём браузеру отрисовать
+  await new Promise(r => setTimeout(r, 300));
+
   await html2pdf().set({
-    margin: [12, 12, 12, 12],
-    filename: `прайс-лист_${new Date().toISOString().slice(0,10)}.pdf`,
+    margin: [10, 12, 10, 12],
+    filename: 'прайс-лист_' + new Date().toISOString().slice(0,10) + '.pdf',
     image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
+    html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794 },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: ['avoid-all', 'css'] }
-  }).from(el).save();
+    pagebreak: { mode: 'css', avoid: 'tr' }
+  }).from(wrapper).save();
 
-  // Восстанавливаем фото
-  document.querySelectorAll('.p-thumb-wrap').forEach(el => el.style.display = '');
-  document.querySelectorAll('.product-card').forEach(el => el.style.gridTemplateColumns = '');
-  document.querySelectorAll('.product-grid-header').forEach(el => {
-    el.style.gridTemplateColumns = '';
-    const first = el.querySelector('span:first-child');
-    if (first) first.style.display = '';
-  });
-
+  document.body.removeChild(wrapper);
   btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Скачать PDF';
   btn.disabled = false;
 }
