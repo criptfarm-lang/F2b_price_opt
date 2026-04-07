@@ -749,7 +749,10 @@ function renderPTable(idx) {
             <td style="font-weight:700;color:var(--navy)">${p.price!=null?Number(p.price).toLocaleString('ru-RU'):'<span style="color:var(--text-muted)">—</span>'}</td>
             <td>${p.unit||'—'}</td>
             <td>
-              <button class="btn btn-danger btn-icon btn-sm" onclick="delProduct(${idx},${pi})">✕</button>
+              <div style="display:flex;gap:4px;">
+                <button class="btn btn-secondary btn-icon btn-sm" onclick="openEditModal(${idx},${pi})" title="Редактировать">✎</button>
+                <button class="btn btn-danger btn-icon btn-sm" onclick="delProduct(${idx},${pi})">✕</button>
+              </div>
             </td>
           </tr>`).join('')}
       </tbody>
@@ -917,6 +920,101 @@ async function testToken() {
 }
 
 init();
+
+/* ─── EDIT MODAL ─── */
+let _editCat = null, _editProd = null;
+
+function openEditModal(catIdx, prodIdx) {
+  _editCat = catIdx;
+  _editProd = prodIdx;
+  const p = S.categories[catIdx].products[prodIdx];
+  document.getElementById('editModalName').textContent = p.name;
+  document.getElementById('editDesc').value = p.description || '';
+  // Load existing images
+  const grid = document.getElementById('editImgGrid');
+  grid.innerHTML = '';
+  (p.images||[]).forEach(src => {
+    const w = document.createElement('div');
+    w.className = 'img-thumb';
+    w.innerHTML = `<img src="${src}"><button class="img-rm" onclick="this.parentElement.remove()">✕</button>`;
+    grid.appendChild(w);
+  });
+  const modal = document.getElementById('editModal');
+  modal.style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+  _editCat = null; _editProd = null;
+}
+
+function handleEditFiles(files) {
+  const grid = document.getElementById('editImgGrid');
+  [...files].forEach(f => {
+    if (!f.type.startsWith('image/')) return;
+    const fr = new FileReader();
+    fr.onload = e => {
+      const w = document.createElement('div');
+      w.className = 'img-thumb';
+      w.innerHTML = `<img src="${e.target.result}"><button class="img-rm" onclick="this.parentElement.remove()">✕</button>`;
+      grid.appendChild(w);
+    };
+    fr.readAsDataURL(f);
+  });
+}
+
+function saveEdit() {
+  if (_editCat === null || _editProd === null) return;
+  const p = S.categories[_editCat].products[_editProd];
+  p.description = document.getElementById('editDesc').value;
+  p.images = [...document.querySelectorAll('#editImgGrid img')].map(i => i.src);
+  document.getElementById(`ptable-${_editCat}`).innerHTML = renderPTable(_editCat);
+  closeEditModal();
+  toast('Изменения сохранены. Не забудьте нажать «Сохранить»!', 'success');
+}
+
+// Setup drag-and-drop for edit modal
+document.addEventListener('DOMContentLoaded', () => {
+  const dz = document.getElementById('editDropZone');
+  if (dz) {
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleEditFiles(e.dataTransfer.files); });
+  }
+});
+
+// Close modal on backdrop click
+document.getElementById('editModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('editModal')) closeEditModal();
+});
 </script>
+
+<!-- ─── EDIT MODAL ─── -->
+<div id="editModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(26,39,68,.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(26,39,68,.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h3 style="font-size:16px;font-weight:700;color:var(--navy);">Редактировать товар</h3>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+    </div>
+    <div id="editModalName" style="font-size:14px;font-weight:600;color:var(--navy);padding:10px 14px;background:var(--bg);border-radius:8px;margin-bottom:16px;"></div>
+    <div class="field" style="margin-bottom:16px;">
+      <label>Описание</label>
+      <input type="text" id="editDesc" placeholder="Охлаждённое, без кожи, 1-2 кг">
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Фото товара (карусель)</div>
+      <div class="img-grid" id="editImgGrid" style="margin-bottom:10px;"></div>
+      <label class="drop-zone" id="editDropZone">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <p>Перетащите или <strong>выберите фото</strong><br><span style="font-size:11px">PNG, JPG</span></p>
+        <input type="file" multiple accept="image/*" id="editFileInput" onchange="handleEditFiles(this.files)">
+      </label>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeEditModal()">Отмена</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Сохранить</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
