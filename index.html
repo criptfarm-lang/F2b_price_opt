@@ -729,7 +729,7 @@ footer {
   </div>
   <div class="footer-bottom">
     <span id="footerCopy">© 2024 Fish to Business</span>
-    <span>Все цены указаны без НДС</span>
+    <span>Все цены указаны с НДС</span>
   </div>
 </footer>
 
@@ -971,7 +971,7 @@ async function downloadPDF() {
       <thead><tr><th>Наименование</th><th>Артикул</th><th>Цена опт</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div class="footer"><span>Все цены указаны без НДС</span><span>${co.name||'Fish to Business'} · ${date}</span></div>
+    <div class="footer"><span>Все цены указаны с НДС</span><span>${co.name||'Fish to Business'} · ${date}</span></div>
     </body></html>`;
 
     // Открываем в новой вкладке и печатаем
