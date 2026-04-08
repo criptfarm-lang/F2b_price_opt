@@ -1,11 +1,12 @@
 {
   "name": "fish-pricelist",
   "version": "1.0.0",
-  "description": "Прайс-лист с интеграцией МойСклад",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "pdfkit": "^0.15.0"
   },
   "engines": {
     "node": ">=16"

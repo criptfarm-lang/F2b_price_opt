@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Прайс-лист — Fish to Business</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐟</text></svg>">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -914,77 +913,7 @@ function filterProducts(q) {
 }
 
 async function downloadPDF() {
-  const btn = document.querySelector('.btn-pdf');
-  btn.innerHTML = 'Формирование...';
-  btn.disabled = true;
-
-  try {
-    if (!allData || !allData.categories?.length) {
-      const r = await fetch('/api/pricelist');
-      allData = await r.json();
-    }
-    const data = allData;
-    const co = data.company || {};
-    const date = new Date().toLocaleDateString('ru-RU', {day:'numeric',month:'long',year:'numeric'});
-    const phone = co.phone || '8-800-700-27-03';
-    const address = co.address || 'Московская обл., Раменский р-н, п. Ильинский, ул. Пролетарская, д 49';
-
-    let rows = '';
-    (data.categories||[]).forEach(cat => {
-      if (!cat.products?.length) return;
-      rows += '<tr><td colspan="3" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #F26522;background:#f0f2f7;color:#1a2744;">' + cat.name + '</td></tr>';
-      cat.products.forEach((p, i) => {
-        const price = p.price != null ? Number(p.price).toLocaleString('ru-RU') + ' ₽' + (p.unit ? ' / ' + p.unit : '') : 'По запросу';
-        rows += '<tr style="background:' + (i%2===0?'#fff':'#fafaf9') + '">'
-          + '<td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;font-size:10px;">' + p.name + '</td>'
-          + '<td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:10px;color:#8898aa;white-space:nowrap;width:80px;">' + (p.code||'—') + '</td>'
-          + '<td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:10px;font-weight:700;white-space:nowrap;width:100px;">' + price + '</td>'
-          + '</tr>';
-      });
-    });
-
-    const html = '<div style="font-family:Arial,sans-serif;color:#1a2744;padding:0;">'
-      + '<div style="border-bottom:3px solid #F26522;padding-bottom:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:flex-start;">'
-      + '<div><div style="font-size:15px;font-weight:700;text-transform:uppercase;">' + (co.name||'FISH TO BUSINESS') + '</div>'
-      + (co.tagline ? '<div style="font-size:9px;color:#8898aa;margin-top:1px;">' + co.tagline + '</div>' : '')
-      + '<div style="font-size:9px;color:#4a5568;margin-top:3px;line-height:1.6;">' + phone + '<br>' + address + '</div></div>'
-      + '<div style="text-align:right;font-size:9px;color:#4a5568;"><b style="font-size:11px;color:#1a2744;">Прайс-лист</b><br>от ' + date + '</div></div>'
-      + '<table style="width:100%;border-collapse:collapse;">'
-      + '<thead><tr style="background:#f5f6f8;">'
-      + '<th style="text-align:left;padding:4px 8px;font-size:8px;text-transform:uppercase;color:#8898aa;border-bottom:1px solid #e2e6f0;letter-spacing:.04em;">Наименование</th>'
-      + '<th style="text-align:right;padding:4px 8px;font-size:8px;text-transform:uppercase;color:#8898aa;border-bottom:1px solid #e2e6f0;width:80px;">Артикул</th>'
-      + '<th style="text-align:right;padding:4px 8px;font-size:8px;text-transform:uppercase;color:#8898aa;border-bottom:1px solid #e2e6f0;width:100px;">Цена опт</th>'
-      + '</tr></thead><tbody>' + rows + '</tbody></table>'
-      + '<div style="margin-top:10px;padding-top:6px;border-top:1px solid #e2e6f0;font-size:8px;color:#8898aa;display:flex;justify-content:space-between;">'
-      + '<span>Все цены указаны с НДС</span><span>' + (co.name||'Fish to Business') + ' · ' + date + '</span></div></div>';
-
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position:fixed;top:0;left:0;width:210mm;background:#fff;z-index:99999;padding:15mm 12mm;box-sizing:border-box;';
-    wrapper.innerHTML = html;
-    document.body.appendChild(wrapper);
-    document.body.style.overflow = 'hidden';
-
-    await new Promise(r => setTimeout(r, 400));
-
-    await html2pdf().set({
-      margin: 0,
-      filename: 'прайс-лист_' + new Date().toISOString().slice(0,10) + '.pdf',
-      image: {type:'jpeg', quality:0.95},
-      html2canvas: {scale:2, useCORS:true, logging:false, width:794, windowWidth:794},
-      jsPDF: {unit:'mm', format:'a4', orientation:'portrait'},
-      pagebreak: {mode:'css', avoid:'tr'}
-    }).from(wrapper).save();
-
-    document.body.removeChild(wrapper);
-    document.body.style.overflow = '';
-
-  } catch(e) {
-    console.error(e);
-    alert('Ошибка PDF: ' + e.message);
-  }
-
-  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Скачать PDF';
-  btn.disabled = false;
+  window.location.href = '/api/pdf';
 }
 
 loadPriceList();

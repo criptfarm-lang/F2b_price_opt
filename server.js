@@ -119,6 +119,115 @@ async function syncAll(categories) {
   return updated;
 }
 
+// ─── PDF generation ──────────────────────────────────────────
+function generatePDF(data) {
+  return new Promise((resolve, reject) => {
+    try {
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument({ margin: 40, size: 'A4' });
+      const buffers = [];
+      doc.on('data', chunk => buffers.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', reject);
+
+      const co = data.company || {};
+      const date = new Date().toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'});
+      const phone = co.phone || '8-800-700-27-03';
+      const address = co.address || 'Московская обл., Раменский р-н, п. Ильинский, ул. Пролетарская, д 49';
+      const navy = '#1a2744';
+      const orange = '#F26522';
+      const muted = '#8898aa';
+      const w = 515; // page width minus margins
+
+      // Header
+      doc.fontSize(16).fillColor(navy).font('Helvetica-Bold')
+         .text((co.name || 'FISH TO BUSINESS').toUpperCase(), 40, 40);
+      if (co.tagline) {
+        doc.fontSize(9).fillColor(muted).font('Helvetica')
+           .text(co.tagline, 40, doc.y + 2);
+      }
+      doc.fontSize(9).fillColor('#4a5568').font('Helvetica')
+         .text(phone, 40, doc.y + 4)
+         .text(address, 40, doc.y + 2);
+
+      // Date block (top right)
+      doc.fontSize(9).fillColor('#4a5568').font('Helvetica')
+         .text('Прайс-лист', 40, 40, {align: 'right', width: w})
+         .text('от ' + date, 40, doc.y, {align: 'right', width: w});
+
+      // Orange line
+      const lineY = doc.y + 8;
+      doc.moveTo(40, lineY).lineTo(555, lineY).lineWidth(2.5).strokeColor(orange).stroke();
+      doc.moveDown(0.8);
+
+      // Table header
+      const tableTop = doc.y + 4;
+      const col1 = 40, col2 = 390, col3 = 460;
+      const rowH = 18;
+
+      doc.rect(40, tableTop, w, rowH).fillColor('#f5f6f8').fill();
+      doc.fontSize(8).fillColor(muted).font('Helvetica-Bold');
+      doc.text('НАИМЕНОВАНИЕ', col1 + 4, tableTop + 5);
+      doc.text('АРТИКУЛ', col2, tableTop + 5, {width: 60, align: 'right'});
+      doc.text('ЦЕНА ОПТ', col3, tableTop + 5, {width: 95, align: 'right'});
+      doc.moveDown(0);
+
+      let y = tableTop + rowH;
+      let rowIdx = 0;
+
+      (data.categories || []).forEach(cat => {
+        if (!cat.products?.length) return;
+
+        // Check page break
+        if (y > 760) { doc.addPage(); y = 40; }
+
+        // Category header
+        doc.rect(40, y, w, rowH).fillColor('#f0f2f7').fill();
+        doc.moveTo(40, y + rowH - 0.5).lineTo(555, y + rowH - 0.5).lineWidth(1.5).strokeColor(orange).stroke();
+        doc.fontSize(8).fillColor(navy).font('Helvetica-Bold')
+           .text(cat.name.toUpperCase(), col1 + 4, y + 5, {width: 340});
+        y += rowH;
+        rowIdx = 0;
+
+        cat.products.forEach(p => {
+          if (y > 760) { doc.addPage(); y = 40; }
+
+          const bg = rowIdx % 2 === 0 ? '#ffffff' : '#fafaf9';
+          doc.rect(40, y, w, rowH).fillColor(bg).fill();
+
+          // Bottom border
+          doc.moveTo(40, y + rowH).lineTo(555, y + rowH).lineWidth(0.3).strokeColor('#f0f0f0').stroke();
+
+          const price = p.price != null
+            ? Number(p.price).toLocaleString('ru-RU') + ' ₽' + (p.unit ? ' / ' + p.unit : '')
+            : 'По запросу';
+
+          doc.fontSize(9).fillColor(navy).font('Helvetica')
+             .text(p.name, col1 + 4, y + 4, {width: 340, ellipsis: true});
+          doc.fontSize(9).fillColor(muted).font('Helvetica')
+             .text(p.code || '—', col2, y + 4, {width: 60, align: 'right'});
+          doc.fontSize(9).fillColor(navy).font('Helvetica-Bold')
+             .text(price, col3, y + 4, {width: 95, align: 'right'});
+
+          y += rowH;
+          rowIdx++;
+        });
+      });
+
+      // Footer
+      if (y > 760) { doc.addPage(); y = 40; }
+      y += 10;
+      doc.moveTo(40, y).lineTo(555, y).lineWidth(0.5).strokeColor('#e2e6f0').stroke();
+      y += 6;
+      doc.fontSize(8).fillColor(muted).font('Helvetica')
+         .text('Все цены указаны с НДС', col1, y)
+         .text((co.name || 'Fish to Business') + ' · ' + date, col1, y, {align: 'right', width: w});
+
+      doc.end();
+    } catch(e) { reject(e); }
+  });
+}
+
 // ─── static ───────────────────────────────────────────────────
 const MIME = {'.html':'text/html; charset=utf-8','.js':'application/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.ico':'image/x-icon'};
 function serveFile(res, fp) {
@@ -159,6 +268,24 @@ async function router(req, res) {
       return sendJSON(res, {ok:true, updated:updated.length, products:updated});
     } catch(e) { return sendErr(res, e.message, 500); }
   }
+  if (pathname==='/api/pdf' && req.method==='GET') {
+    try {
+      const data = loadData();
+      const pdfBuf = await generatePDF(data);
+      const filename = 'price-list-' + new Date().toISOString().slice(0,10) + '.pdf';
+      res.writeHead(200, {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename="' + filename + '"',
+        'Content-Length': pdfBuf.length
+      });
+      res.end(pdfBuf);
+    } catch(e) {
+      console.error('PDF error:', e);
+      sendErr(res, 'Ошибка генерации PDF: ' + e.message, 500);
+    }
+    return;
+  }
+
   if (pathname==='/api/moysklad/test' && req.method==='POST') {
     const body = await readBody(req);
     const saved = MS_TOKEN;
