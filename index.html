@@ -673,10 +673,7 @@ footer {
     <span class="topbar-phone" id="tbPhone">8-800-700-27-03</span>
     <span class="topbar-hours" id="tbHours">По будням с 9:00 до 18:00</span>
   </div>
-  <div class="topbar-right">
-    <a class="topbar-link" href="#" id="tbSiteLink">Главный сайт</a>
-    <a class="topbar-link" href="admin.html">Управление</a>
-  </div>
+  <div class="topbar-right"></div>
 </div>
 
 <!-- HEADER -->
@@ -957,7 +954,7 @@ function filterProducts(q) {
 }
 
 async function downloadPDF() {
-  window.location.href = '/api/pdf';
+  window.open('/api/pdf', '_blank');
 }
 
 loadPriceList();

@@ -119,129 +119,66 @@ async function syncAll(categories) {
   return updated;
 }
 
-// ─── PDF generation ──────────────────────────────────────────
-function generatePDF(data) {
-  return new Promise((resolve, reject) => {
-    try {
-      const PDFDocument = require('pdfkit');
-      // Используем встроенный шрифт с поддержкой кириллицы через unicode
-      const doc = new PDFDocument({ margin: 40, size: 'A4', font: 'Helvetica' });
-      const buffers = [];
-      doc.on('data', chunk => buffers.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(buffers)));
-      doc.on('error', reject);
+// ─── PDF HTML page ───────────────────────────────────────────
+function buildPDFHtml(data) {
+  const co = data.company || {};
+  const date = new Date().toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'});
+  const phone = co.phone || '8-800-700-27-03';
+  const address = co.address || 'Московская обл., Раменский р-н, п. Ильинский, ул. Пролетарская, д 49';
 
-      const co = data.company || {};
-      const date = new Date().toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'});
-      const phone = co.phone || '8-800-700-27-03';
-      const address = co.address || 'Московская обл., Раменский р-н, п. Ильинский, ул. Пролетарская, д 49';
-      const navy = '#1a2744';
-      const orange = '#F26522';
-      const muted = '#8898aa';
-      const w = 515; // page width minus margins
-
-      // Header
-      // Download font for Cyrillic support
-      const fontPath = require('path').join(__dirname, 'fonts', 'DejaVuSans.ttf');
-      const fontBoldPath = require('path').join(__dirname, 'fonts', 'DejaVuSans-Bold.ttf');
-      const fs2 = require('fs');
-      
-      let regularFont = 'Helvetica';
-      let boldFont = 'Helvetica-Bold';
-      
-      if (fs2.existsSync(fontPath) && fs2.existsSync(fontBoldPath)) {
-        doc.registerFont('Regular', fontPath);
-        doc.registerFont('Bold', fontBoldPath);
-        regularFont = 'Regular';
-        boldFont = 'Bold';
-      }
-
-      doc.fontSize(16).fillColor(navy).font(boldFont)
-         .text((co.name || 'FISH TO BUSINESS').toUpperCase(), 40, 40);
-      if (co.tagline) {
-        doc.fontSize(9).fillColor(muted).font(regularFont)
-           .text(co.tagline, 40, doc.y + 2);
-      }
-      doc.fontSize(9).fillColor('#4a5568').font(regularFont)
-         .text(phone, 40, doc.y + 4)
-         .text(address, 40, doc.y + 2);
-
-      // Date block (top right)
-      doc.fontSize(9).fillColor('#4a5568').font(regularFont)
-         .text('Прайс-лист', 40, 40, {align: 'right', width: w})
-         .text('от ' + date, 40, doc.y, {align: 'right', width: w});
-
-      // Orange line
-      const lineY = doc.y + 8;
-      doc.moveTo(40, lineY).lineTo(555, lineY).lineWidth(2.5).strokeColor(orange).stroke();
-      doc.moveDown(0.8);
-
-      // Table header
-      const tableTop = doc.y + 4;
-      const col1 = 40, col2 = 390, col3 = 460;
-      const rowH = 18;
-
-      doc.rect(40, tableTop, w, rowH).fillColor('#f5f6f8').fill();
-      doc.fontSize(8).fillColor(muted).font(boldFont);
-      doc.text('НАИМЕНОВАНИЕ', col1 + 4, tableTop + 5);
-      doc.text('АРТИКУЛ', col2, tableTop + 5, {width: 60, align: 'right'});
-      doc.text('ЦЕНА ОПТ', col3, tableTop + 5, {width: 95, align: 'right'});
-      doc.moveDown(0);
-
-      let y = tableTop + rowH;
-      let rowIdx = 0;
-
-      (data.categories || []).forEach(cat => {
-        if (!cat.products?.length) return;
-
-        // Check page break
-        if (y > 760) { doc.addPage(); y = 40; }
-
-        // Category header
-        doc.rect(40, y, w, rowH).fillColor('#f0f2f7').fill();
-        doc.moveTo(40, y + rowH - 0.5).lineTo(555, y + rowH - 0.5).lineWidth(1.5).strokeColor(orange).stroke();
-        doc.fontSize(8).fillColor(navy).font(boldFont)
-           .text(cat.name.toUpperCase(), col1 + 4, y + 5, {width: 340});
-        y += rowH;
-        rowIdx = 0;
-
-        cat.products.forEach(p => {
-          if (y > 760) { doc.addPage(); y = 40; }
-
-          const bg = rowIdx % 2 === 0 ? '#ffffff' : '#fafaf9';
-          doc.rect(40, y, w, rowH).fillColor(bg).fill();
-
-          // Bottom border
-          doc.moveTo(40, y + rowH).lineTo(555, y + rowH).lineWidth(0.3).strokeColor('#f0f0f0').stroke();
-
-          const price = p.price != null
-            ? Number(p.price).toLocaleString('ru-RU') + ' ₽' + (p.unit ? ' / ' + p.unit : '')
-            : 'По запросу';
-
-          doc.fontSize(9).fillColor(navy).font(regularFont)
-             .text(p.name, col1 + 4, y + 4, {width: 340, ellipsis: true});
-          doc.fontSize(9).fillColor(muted).font(regularFont)
-             .text(p.code || '—', col2, y + 4, {width: 60, align: 'right'});
-          doc.fontSize(9).fillColor(navy).font(boldFont)
-             .text(price, col3, y + 4, {width: 95, align: 'right'});
-
-          y += rowH;
-          rowIdx++;
-        });
-      });
-
-      // Footer
-      if (y > 760) { doc.addPage(); y = 40; }
-      y += 10;
-      doc.moveTo(40, y).lineTo(555, y).lineWidth(0.5).strokeColor('#e2e6f0').stroke();
-      y += 6;
-      doc.fontSize(8).fillColor(muted).font(regularFont)
-         .text('Все цены указаны с НДС', col1, y)
-         .text((co.name || 'Fish to Business') + ' · ' + date, col1, y, {align: 'right', width: w});
-
-      doc.end();
-    } catch(e) { reject(e); }
+  let rows = '';
+  (data.categories||[]).forEach(cat => {
+    if (!cat.products?.length) return;
+    rows += `<tr><td colspan="3" class="cat-hdr">${cat.name}</td></tr>`;
+    cat.products.forEach((p, i) => {
+      const price = p.price != null
+        ? Number(p.price).toLocaleString('ru-RU') + ' ₽' + (p.unit ? ' / ' + p.unit : '')
+        : 'По запросу';
+      rows += `<tr class="${i%2===0?'even':'odd'}">
+        <td class="td-n">${p.name}</td>
+        <td class="td-c">${p.code||'—'}</td>
+        <td class="td-p">${price}</td>
+      </tr>`;
+    });
   });
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Прайс-лист</title>
+  <style>
+    @page { margin: 12mm 14mm; size: A4; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #1a2744; font-size: 10px; }
+    .hdr { border-bottom: 3px solid #F26522; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .co-name { font-size: 15px; font-weight: 700; text-transform: uppercase; }
+    .co-sub { font-size: 9px; color: #8898aa; margin-top: 1px; }
+    .co-contacts { font-size: 9px; color: #555; margin-top: 4px; line-height: 1.6; }
+    .date-blk { text-align: right; font-size: 9px; color: #555; }
+    .date-blk b { font-size: 12px; color: #1a2744; display: block; }
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 4px 8px; font-size: 8px; text-transform: uppercase; letter-spacing: .04em; color: #8898aa; background: #f5f6f8; border-bottom: 1px solid #e2e6f0; }
+    th:first-child { text-align: left; }
+    th:not(:first-child) { text-align: right; }
+    .cat-hdr { padding: 6px 8px 3px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; background: #f0f2f7; border-bottom: 2px solid #F26522; color: #1a2744; }
+    .td-n { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; }
+    .td-c { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; text-align: right; color: #8898aa; width: 80px; white-space: nowrap; }
+    .td-p { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; text-align: right; font-weight: 700; width: 110px; white-space: nowrap; }
+    .even { background: #fff; } .odd { background: #fafaf9; }
+    .ftr { margin-top: 10px; padding-top: 6px; border-top: 1px solid #e2e6f0; display: flex; justify-content: space-between; font-size: 8px; color: #8898aa; }
+  </style></head><body>
+  <div class="hdr">
+    <div>
+      <div class="co-name">${co.name||'FISH TO BUSINESS'}</div>
+      ${co.tagline?`<div class="co-sub">${co.tagline}</div>`:''}
+      <div class="co-contacts">${phone}<br>${address}</div>
+    </div>
+    <div class="date-blk"><b>Прайс-лист</b>от ${date}</div>
+  </div>
+  <table>
+    <thead><tr><th>Наименование</th><th>Артикул</th><th>Цена опт</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="ftr"><span>Все цены указаны с НДС</span><span>${co.name||'Fish to Business'} · ${date}</span></div>
+  <script>window.onload=function(){window.print();}</script>
+  </body></html>`;
 }
 
 // ─── static ───────────────────────────────────────────────────
@@ -285,20 +222,10 @@ async function router(req, res) {
     } catch(e) { return sendErr(res, e.message, 500); }
   }
   if (pathname==='/api/pdf' && req.method==='GET') {
-    try {
-      const data = loadData();
-      const pdfBuf = await generatePDF(data);
-      const filename = 'price-list-' + new Date().toISOString().slice(0,10) + '.pdf';
-      res.writeHead(200, {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename="' + filename + '"',
-        'Content-Length': pdfBuf.length
-      });
-      res.end(pdfBuf);
-    } catch(e) {
-      console.error('PDF error:', e);
-      sendErr(res, 'Ошибка генерации PDF: ' + e.message, 500);
-    }
+    const data = loadData();
+    const html = buildPDFHtml(data);
+    res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+    res.end(html);
     return;
   }
 
