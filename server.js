@@ -146,7 +146,9 @@ function buildPDFHtml(data) {
   <style>
     @page { margin: 12mm 14mm; size: A4; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; color: #1a2744; font-size: 10px; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #1a2744; font-size: 10px; background: #f5f6f8; }
+    .page { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px 24px; }
+    @media print { body { background: #fff; } .page { padding: 0; } }
     .hdr { border-bottom: 3px solid #F26522; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
     .co-name { font-size: 15px; font-weight: 700; text-transform: uppercase; }
     .co-sub { font-size: 9px; color: #8898aa; margin-top: 1px; }
@@ -164,6 +166,7 @@ function buildPDFHtml(data) {
     .even { background: #fff; } .odd { background: #fafaf9; }
     .ftr { margin-top: 10px; padding-top: 6px; border-top: 1px solid #e2e6f0; display: flex; justify-content: space-between; font-size: 8px; color: #8898aa; }
   </style></head><body>
+  <div class="page">
   <div class="hdr">
     <div>
       <div class="co-name">${co.name||'FISH TO BUSINESS'}</div>
@@ -178,6 +181,7 @@ function buildPDFHtml(data) {
   </table>
   <div class="ftr"><span>Все цены указаны с НДС</span><span>${co.name||'Fish to Business'} · ${date}</span></div>
   <script>window.onload=function(){window.print();}</script>
+  </div>
   </body></html>`;
 }
 
