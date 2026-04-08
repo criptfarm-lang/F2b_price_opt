@@ -595,22 +595,66 @@ footer {
 
 /* ─── RESPONSIVE ─── */
 @media(max-width:768px){
-  .topbar { padding:0 16px; }
+  /* Topbar — скрываем часы, оставляем телефон */
+  .topbar { padding:0 12px; height:auto; min-height:36px; flex-wrap:wrap; }
+  .topbar-left { gap:8px; flex-wrap:wrap; }
+  .topbar-hours { display:none; }
+
+  /* Header */
   .header-search, .update-pill { display:none; }
-  .header-inner { padding:0 16px; }
-  .hero-inner { padding:24px 16px 20px; flex-direction:column; }
-  .hero-stats { flex-wrap:wrap; gap:16px; }
-  .cat-nav-inner { padding:0 16px; }
-  main { padding:24px 16px 60px; }
-  .product-grid { grid-template-columns:1fr 1fr; gap:12px; }
-  footer { }
-  .footer-top { padding:28px 16px 24px; flex-direction:column; gap:24px; }
-  .footer-bottom { padding:14px 16px; flex-direction:column; gap:6px; }
+  .header-inner { padding:0 12px; height:56px; gap:12px; }
+  .logo-title { font-size:12px; }
+  .logo-sub { font-size:10px; }
+  .logo-icon { width:34px; height:34px; }
+  .btn-pdf { padding:8px 14px; font-size:12px; }
+  .btn-pdf svg { display:none; }
+
+  /* Hero — компактный */
+  .hero-inner { padding:12px 16px 10px; flex-direction:row; flex-wrap:wrap; gap:8px; }
+  .hero-title { font-size:15px; }
+  .hero-title br { display:none; }
+  .hero-desc { display:none; }
+  .hero-stats { gap:12px; }
+  .hero-stat-num { font-size:14px; }
+  .hero-date { display:none; }
+
+  /* Nav */
+  .cat-nav-inner { padding:0 12px; }
+  .cat-tab { padding:10px 12px; font-size:12px; }
+
+  /* Main */
+  main { padding:16px 12px 40px; }
+
+  /* Product list */
+  .product-grid { border-radius:8px; }
+  .product-card { grid-template-columns:36px 1fr auto; }
+  .p-thumb-wrap { width:36px; height:36px; }
+  .p-thumb-mini { width:36px; height:36px; }
+  .p-thumb-placeholder { width:36px; height:36px; }
+  .p-info { padding:6px 10px; }
+  .product-name { font-size:12px; }
+  .product-desc { font-size:10px; }
+  .p-code { display:none; }
+  .p-price-wrap { padding:0 12px 0 4px; min-width:80px; }
+  .price-val { font-size:13px; }
+  .price-unit { font-size:10px; }
+  .product-grid-header { grid-template-columns:36px 1fr auto; }
+  .product-grid-header .h-code { display:none; }
+  .product-grid-header .h-price { min-width:80px; padding-right:12px; }
+
+  /* Section */
+  .cat-section { margin-bottom:20px; }
+  .cat-section-title { font-size:13px; }
+
+  /* Footer */
+  .footer-top { padding:20px 16px; flex-direction:column; gap:16px; }
+  .footer-bottom { padding:12px 16px; flex-direction:column; gap:4px; text-align:center; }
 }
 
-@media(max-width:480px){
-  .product-grid { grid-template-columns:1fr; }
-  .hero-title { font-size:22px; }
+@media(max-width:400px){
+  .logo-title { font-size:11px; }
+  .btn-pdf { padding:7px 12px; font-size:11px; }
+  .topbar-phone { font-size:11px; }
 }
 
 @media print {
