@@ -124,7 +124,8 @@ function generatePDF(data) {
   return new Promise((resolve, reject) => {
     try {
       const PDFDocument = require('pdfkit');
-      const doc = new PDFDocument({ margin: 40, size: 'A4' });
+      // Используем встроенный шрифт с поддержкой кириллицы через unicode
+      const doc = new PDFDocument({ margin: 40, size: 'A4', font: 'Helvetica' });
       const buffers = [];
       doc.on('data', chunk => buffers.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
@@ -140,18 +141,33 @@ function generatePDF(data) {
       const w = 515; // page width minus margins
 
       // Header
-      doc.fontSize(16).fillColor(navy).font('Helvetica-Bold')
+      // Download font for Cyrillic support
+      const fontPath = require('path').join(__dirname, 'fonts', 'DejaVuSans.ttf');
+      const fontBoldPath = require('path').join(__dirname, 'fonts', 'DejaVuSans-Bold.ttf');
+      const fs2 = require('fs');
+      
+      let regularFont = 'Helvetica';
+      let boldFont = 'Helvetica-Bold';
+      
+      if (fs2.existsSync(fontPath) && fs2.existsSync(fontBoldPath)) {
+        doc.registerFont('Regular', fontPath);
+        doc.registerFont('Bold', fontBoldPath);
+        regularFont = 'Regular';
+        boldFont = 'Bold';
+      }
+
+      doc.fontSize(16).fillColor(navy).font(boldFont)
          .text((co.name || 'FISH TO BUSINESS').toUpperCase(), 40, 40);
       if (co.tagline) {
-        doc.fontSize(9).fillColor(muted).font('Helvetica')
+        doc.fontSize(9).fillColor(muted).font(regularFont)
            .text(co.tagline, 40, doc.y + 2);
       }
-      doc.fontSize(9).fillColor('#4a5568').font('Helvetica')
+      doc.fontSize(9).fillColor('#4a5568').font(regularFont)
          .text(phone, 40, doc.y + 4)
          .text(address, 40, doc.y + 2);
 
       // Date block (top right)
-      doc.fontSize(9).fillColor('#4a5568').font('Helvetica')
+      doc.fontSize(9).fillColor('#4a5568').font(regularFont)
          .text('Прайс-лист', 40, 40, {align: 'right', width: w})
          .text('от ' + date, 40, doc.y, {align: 'right', width: w});
 
@@ -166,7 +182,7 @@ function generatePDF(data) {
       const rowH = 18;
 
       doc.rect(40, tableTop, w, rowH).fillColor('#f5f6f8').fill();
-      doc.fontSize(8).fillColor(muted).font('Helvetica-Bold');
+      doc.fontSize(8).fillColor(muted).font(boldFont);
       doc.text('НАИМЕНОВАНИЕ', col1 + 4, tableTop + 5);
       doc.text('АРТИКУЛ', col2, tableTop + 5, {width: 60, align: 'right'});
       doc.text('ЦЕНА ОПТ', col3, tableTop + 5, {width: 95, align: 'right'});
@@ -184,7 +200,7 @@ function generatePDF(data) {
         // Category header
         doc.rect(40, y, w, rowH).fillColor('#f0f2f7').fill();
         doc.moveTo(40, y + rowH - 0.5).lineTo(555, y + rowH - 0.5).lineWidth(1.5).strokeColor(orange).stroke();
-        doc.fontSize(8).fillColor(navy).font('Helvetica-Bold')
+        doc.fontSize(8).fillColor(navy).font(boldFont)
            .text(cat.name.toUpperCase(), col1 + 4, y + 5, {width: 340});
         y += rowH;
         rowIdx = 0;
@@ -202,11 +218,11 @@ function generatePDF(data) {
             ? Number(p.price).toLocaleString('ru-RU') + ' ₽' + (p.unit ? ' / ' + p.unit : '')
             : 'По запросу';
 
-          doc.fontSize(9).fillColor(navy).font('Helvetica')
+          doc.fontSize(9).fillColor(navy).font(regularFont)
              .text(p.name, col1 + 4, y + 4, {width: 340, ellipsis: true});
-          doc.fontSize(9).fillColor(muted).font('Helvetica')
+          doc.fontSize(9).fillColor(muted).font(regularFont)
              .text(p.code || '—', col2, y + 4, {width: 60, align: 'right'});
-          doc.fontSize(9).fillColor(navy).font('Helvetica-Bold')
+          doc.fontSize(9).fillColor(navy).font(boldFont)
              .text(price, col3, y + 4, {width: 95, align: 'right'});
 
           y += rowH;
@@ -219,7 +235,7 @@ function generatePDF(data) {
       y += 10;
       doc.moveTo(40, y).lineTo(555, y).lineWidth(0.5).strokeColor('#e2e6f0').stroke();
       y += 6;
-      doc.fontSize(8).fillColor(muted).font('Helvetica')
+      doc.fontSize(8).fillColor(muted).font(regularFont)
          .text('Все цены указаны с НДС', col1, y)
          .text((co.name || 'Fish to Business') + ' · ' + date, col1, y, {align: 'right', width: w});
 
