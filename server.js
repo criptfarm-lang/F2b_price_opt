@@ -427,6 +427,14 @@ async function router(req, res) {
     }
   }
 
+  // GET /api/debug/stores — список складов
+  if (pathname==='/api/debug/stores' && req.method==='GET') {
+    try {
+      const r = await msGet('/entity/store');
+      return sendJSON(res, r.rows.map(s => ({ id: s.id, name: s.name })));
+    } catch(e) { return sendErr(res, e.message); }
+  }
+
   // GET /api/debug/stock — показывает первые 3 строки отчёта остатков
   if (pathname==='/api/debug/stock' && req.method==='GET') {
     try {
