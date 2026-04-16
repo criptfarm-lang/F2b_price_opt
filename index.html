@@ -286,6 +286,7 @@ let settings = { rowOrder:[], competitorPrices:{}, collapsedGroups:[] };
 
 // ── INIT ───────────────────────────────────────────
 loadSettings();
+console.log('Loaded rowOrder from localStorage:', rowOrder.length, 'items');
 if (Object.keys(compPrices).length > 0) {
   document.getElementById('s-comp').textContent = Object.keys(compPrices).length;
 }
@@ -561,6 +562,7 @@ function initDrag() {
       if (fi===-1||ti===-1) return;
       rowOrder.splice(fi,1); rowOrder.splice(ti,0,dragId);
       saveSettings();
+      console.log('Saved rowOrder:', rowOrder.length, 'items');
       render();
     });
   });
@@ -631,12 +633,13 @@ function saveSettings() {
 function loadSettings() {
   try {
     const ro = localStorage.getItem('pm_rowOrder');
-    if (ro) rowOrder = JSON.parse(ro);
+    if (ro) { rowOrder = JSON.parse(ro); console.log('loadSettings: rowOrder', rowOrder.length); }
+    else console.log('loadSettings: no rowOrder saved');
     const cp = localStorage.getItem('pm_compPrices');
     if (cp) compPrices = JSON.parse(cp);
     const cl = localStorage.getItem('pm_collapsed');
     if (cl) collapsed = new Set(JSON.parse(cl));
-  } catch(e) {}
+  } catch(e) { console.error('loadSettings error:', e); }
 }
 
 // ── SORT ───────────────────────────────────────────
