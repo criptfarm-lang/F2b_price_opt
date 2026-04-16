@@ -299,13 +299,23 @@ async function loadMSData() {
   });
   console.log(`Filtered: ${products.length} of ${allProducts.length} products`);
 
-  // 3. Stock — iterate pages, use assortment.meta.href for id
+  // 3. Stock — только Основной склад
   let stockMap = {};
   let costMap = {};
+  let mainStoreId = '';
+  try {
+    const stores = await msGet('/entity/store');
+    const mainStore = (stores.rows||[]).find(s => s.name === 'Основной склад');
+    if (mainStore) mainStoreId = mainStore.id;
+    console.log('Main store:', mainStoreId || 'not found, using all');
+  } catch(e) {
+    console.warn('Store lookup failed:', e.message);
+  }
   try {
     let offset = 0;
     while (true) {
-      const stockResp = await msGet(`/report/stock/all?stockMode=all&limit=1000&offset=${offset}`);
+      const storeFilter = mainStoreId ? `&filter=store=https://api.moysklad.ru/api/remap/1.2/entity/store/${mainStoreId}` : '';
+      const stockResp = await msGet(`/report/stock/all?stockMode=all&limit=1000&offset=${offset}${storeFilter}`);
       const rows = stockResp.rows || [];
       rows.forEach(r => {
         // В /report/stock/all id товара в meta.href напрямую
