@@ -515,7 +515,8 @@ async function router(req, res) {
       const r = await msGet(`/entity/product?search=${encodeURIComponent(code)}&limit=5`);
       const p = r.rows?.find(x => x.code === code || x.article === code) || r.rows?.[0];
       if (!p) return sendErr(res, 'Товар не найден', 404);
-      const sp0   = p.salePrices?.[0];
+      const sp0   = (p.salePrices || []).find(sp => sp.priceType?.name === 'Цена опт')
+                  || p.salePrices?.[0];
       const price = sp0 ? msVal(sp0.value) : null;
       const unit  = p.uom?.name || 'кг';
       return sendJSON(res, { id: p.id, name: p.name, code: p.code || p.article || '', price, unit });
@@ -545,7 +546,8 @@ async function router(req, res) {
 
       const map     = {};
       found.forEach(p => {
-        const sp    = p.salePrices?.[0];
+        const sp    = (p.salePrices || []).find(sp => sp.priceType?.name === 'Цена опт')
+                    || p.salePrices?.[0];
         map[p.code] = { id: p.id, name: p.name, price: sp ? msVal(sp.value) : null, unit: p.uom?.name || 'кг' };
       });
 
