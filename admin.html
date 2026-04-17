@@ -788,7 +788,7 @@ function toggleCat(i) {
 function addCat() {
   S.categories.push({name:'',products:[],_open:true});
   renderCats(); updateStats();
-  setTimeout(()=>document.querySelectorAll('.cat-item').lastItem?.scrollIntoView({block:'nearest',behavior:'smooth'}),80);
+  const items = document.querySelectorAll('.cat-item'); if(items.length) items[items.length-1].scrollIntoView({block:'nearest',behavior:'smooth'});
 }
 function delCat(i) {
   if (!confirm('Удалить категорию и все товары в ней?')) return;
