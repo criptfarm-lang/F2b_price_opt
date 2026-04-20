@@ -216,11 +216,14 @@ function median(arr) {
 }
 
 function trimmedAvg(values) {
-  if (!values.length) return null;
-  if (values.length === 1) return values[0];
-  const med = median(values);
+  // Убираем отрицательные и нулевые значения
+  const positive = values.filter(v => v > 0);
+  if (!positive.length) return null;
+  if (positive.length === 1) return positive[0];
+  const med = median(positive);
   if (med === 0) return null;
-  const filtered = values.filter(v => Math.abs(v - med) / med <= 0.80);
+  // Фильтруем экстремумы: отклонение не более 50% от медианы
+  const filtered = positive.filter(v => Math.abs(v - med) / med <= 0.50);
   if (!filtered.length) return med;
   return filtered.reduce((a, b) => a + b, 0) / filtered.length;
 }
@@ -234,7 +237,9 @@ function buildProduct(p, stockMap, costMap, salesThis, salesLast, salesOlder, pr
   while (prices.length < 3) prices.push(0);
 
   const costFromSales = salesThis[p.id]?.avgCost || salesLast[p.id]?.avgCost || salesOlder[p.id]?.avgCost || 0;
-  const rawCost       = costFromSales || costMap[p.id] || msVal(p.buyPrice?.value) || 0;
+  const rawCostRaw    = costFromSales || costMap[p.id] || msVal(p.buyPrice?.value) || 0;
+  // Игнорируем отрицательные себестоимости
+  const rawCost       = rawCostRaw > 0 ? rawCostRaw : 0;
   const minPrice      = prices.filter(x => x > 0).reduce((a, b) => Math.min(a, b), Infinity);
   const costPrice     = (rawCost > 0 && minPrice < Infinity && rawCost < minPrice * 0.20) ? 0 : rawCost;
 
