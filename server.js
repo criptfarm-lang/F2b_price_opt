@@ -657,34 +657,27 @@ async function router(req, res) {
       const dateFrom = threeMonthsAgo.getFullYear()+'-'+pad(threeMonthsAgo.getMonth()+1)+'-01';
       const dateTo   = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
 
-      // Пробуем получить отгрузки по товару напрямую с expand=positions
-      const demands = await msGet(
-        `/entity/demand?filter=moment>=${dateFrom}%2000%3A00%3A00;moment<=${dateTo}%2023%3A59%3A59&limit=100&order=moment,desc`
-      );
-      // Ищем позиции с нашим товаром
+      // Берём последние 20 отгрузок без фильтра
+      const demands = await msGet(`/entity/demand?limit=20&order=moment,desc&expand=positions`);
       const found = [];
       for (const d of (demands.rows || [])) {
-        const positions = await msGet(`/entity/demand/${d.id}/positions?limit=100`);
-        for (const pos of (positions.rows || [])) {
+        const positions = d.positions?.rows || [];
+        for (const pos of positions) {
           const href = pos.assortment?.meta?.href || '';
           if (href.includes(prodId)) {
             found.push({
-              demandId: d.id,
               moment: d.moment,
               qty: pos.quantity,
               price: pos.price ? pos.price/100 : null,
               cost: pos.cost ? pos.cost/100 : null,
-              costPerUnit: pos.cost ? pos.cost/100 : null,
               allPosFields: Object.keys(pos)
             });
           }
         }
-        if (found.length >= 5) break;
       }
       return sendJSON(res, {
         productName: prod.name,
         productCode: prod.code,
-        period: { from: dateFrom, to: dateTo },
         demandsChecked: (demands.rows||[]).length,
         found
       });
