@@ -103,7 +103,9 @@ body {
 @keyframes b{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
 
 /* PRINT */
+@page { margin: 10mm; size: A4; margin-top: 0; margin-bottom: 0; }
 @media print {
+  html { -webkit-print-color-adjust: exact; }
   .btn-pdf { display: none !important; }
   .header { position: static; }
   body { background: #fff; font-size: 10px; }
@@ -210,7 +212,7 @@ function render(data) {
           <tr>
             <td>
               <div class="p-name">${p.name}</div>
-              ${p.code ? `<div class="p-code">${p.code}</div>` : ''}
+
             </td>
             <td><span class="p-code" style="font-family:monospace;font-size:11px;color:var(--muted)">${p.code || '—'}</span></td>
             <td><span class="p-unit">${p.unit || 'кг'}</span></td>
