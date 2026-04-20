@@ -296,9 +296,10 @@ async function getSalesData(dateFrom, dateTo) {
         const href = row.assortment?.meta?.href || '';
         const id   = href.split('/').pop();
         if (!id) return;
-        const sellQty = row.sellQuantity || 0;
-        const sellSum = msVal(row.sellSum) || 0;
-        const costSum = msVal(row.costSum) || 0;
+        const sellQty  = row.sellQuantity || 0;
+        const sellSum  = msVal(row.sellSum)     || 0;
+        // sellCostSum — фактическая себестоимость продаж (costSum часто 0)
+        const costSum  = msVal(row.sellCostSum) || msVal(row.costSum) || 0;
         if (sellQty > 0) {
           result[id] = { avgPrice: sellSum / sellQty, qty: sellQty };
           const costPerUnit = costSum / sellQty;
@@ -648,7 +649,7 @@ async function router(req, res) {
       const firstProd = prods.rows?.[0];
       const prodId = firstProd?.assortment?.meta?.href?.split('/').pop();
       if (!prodId) return sendErr(res, 'не найден продукт');
-      // Проверяем profit report за последние 3 месяца
+      // Проверяем byoperation — детализация по каждой отгрузке
       const prod = await msGet(`/entity/product/${prodId}`);
       const now = new Date();
       const pad = n => String(n).padStart(2,'0');
@@ -656,39 +657,24 @@ async function router(req, res) {
       const dateFrom = threeMonthsAgo.getFullYear()+'-'+pad(threeMonthsAgo.getMonth()+1)+'-01';
       const dateTo   = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
 
-      let profitRow = null;
-      let offset2 = 0;
-      while (!profitRow) {
-        const report = await msGet(
-          `/report/profit/byproduct?momentFrom=${dateFrom}%2000%3A00%3A00&momentTo=${dateTo}%2023%3A59%3A59&limit=1000&offset=${offset2}`
-        );
-        const rows = report.rows || [];
-        profitRow = rows.find(r => {
-          const href = r.assortment?.meta?.href || '';
-          return href.includes(prodId);
-        });
-        if (rows.length < 1000) break;
-        offset2 += 1000;
-      }
-
-      if (!profitRow) return sendJSON(res, { error: 'товар не найден в profit report', prodId, productName: prod.name });
-
-      const sellQty  = profitRow.sellQuantity || 0;
-      const sellSum  = profitRow.sellSum  ? profitRow.sellSum  / 100 : 0;
-      const costSum  = profitRow.costSum  ? profitRow.costSum  / 100 : 0;
-      const avgPrice = sellQty > 0 ? sellSum / sellQty : null;
-      const avgCost  = sellQty > 0 ? costSum / sellQty : null;
+      const report = await msGet(
+        `/report/profit/byoperation?momentFrom=${dateFrom}%2000%3A00%3A00&momentTo=${dateTo}%2023%3A59%3A59&limit=10&filter=product=https://api.moysklad.ru/api/remap/1.2/entity/product/${prodId}`
+      );
 
       return sendJSON(res, {
         productName: prod.name,
         productCode: prod.code,
         period: { from: dateFrom, to: dateTo },
-        sellQuantity: sellQty,
-        sellSum: Math.round(sellSum),
-        costSum: Math.round(costSum),
-        avgSellPrice: avgPrice ? Math.round(avgPrice * 100) / 100 : null,
-        avgCostPerUnit: avgCost ? Math.round(avgCost * 100) / 100 : null,
-        rawRow: profitRow
+        total: report.meta?.size,
+        rows: (report.rows || []).map(r => ({
+          moment: r.operation?.moment,
+          operationType: r.operation?.meta?.type,
+          sellQty: r.sellQuantity,
+          sellPrice: r.sellPrice ? r.sellPrice/100 : null,
+          sellCost: r.sellCost ? r.sellCost/100 : null,
+          costPerUnit: (r.sellCost && r.sellQuantity) ? Math.round(r.sellCost/100/r.sellQuantity*100)/100 : null,
+          allFields: Object.keys(r)
+        }))
       });
     } catch (e) { return sendErr(res, e.message); }
   }
