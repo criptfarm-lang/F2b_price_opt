@@ -657,24 +657,36 @@ async function router(req, res) {
       const dateFrom = threeMonthsAgo.getFullYear()+'-'+pad(threeMonthsAgo.getMonth()+1)+'-01';
       const dateTo   = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
 
-      const report = await msGet(
-        `/report/profit/byoperation?momentFrom=${dateFrom}%2000%3A00%3A00&momentTo=${dateTo}%2023%3A59%3A59&limit=10&filter=product=https://api.moysklad.ru/api/remap/1.2/entity/product/${prodId}`
+      // Пробуем получить отгрузки по товару напрямую с expand=positions
+      const demands = await msGet(
+        `/entity/demand?filter=moment>=${dateFrom}%2000%3A00%3A00;moment<=${dateTo}%2023%3A59%3A59&limit=100&order=moment,desc`
       );
-
+      // Ищем позиции с нашим товаром
+      const found = [];
+      for (const d of (demands.rows || [])) {
+        const positions = await msGet(`/entity/demand/${d.id}/positions?limit=100`);
+        for (const pos of (positions.rows || [])) {
+          const href = pos.assortment?.meta?.href || '';
+          if (href.includes(prodId)) {
+            found.push({
+              demandId: d.id,
+              moment: d.moment,
+              qty: pos.quantity,
+              price: pos.price ? pos.price/100 : null,
+              cost: pos.cost ? pos.cost/100 : null,
+              costPerUnit: pos.cost ? pos.cost/100 : null,
+              allPosFields: Object.keys(pos)
+            });
+          }
+        }
+        if (found.length >= 5) break;
+      }
       return sendJSON(res, {
         productName: prod.name,
         productCode: prod.code,
         period: { from: dateFrom, to: dateTo },
-        total: report.meta?.size,
-        rows: (report.rows || []).map(r => ({
-          moment: r.operation?.moment,
-          operationType: r.operation?.meta?.type,
-          sellQty: r.sellQuantity,
-          sellPrice: r.sellPrice ? r.sellPrice/100 : null,
-          sellCost: r.sellCost ? r.sellCost/100 : null,
-          costPerUnit: (r.sellCost && r.sellQuantity) ? Math.round(r.sellCost/100/r.sellQuantity*100)/100 : null,
-          allFields: Object.keys(r)
-        }))
+        demandsChecked: (demands.rows||[]).length,
+        found
       });
     } catch (e) { return sendErr(res, e.message); }
   }
