@@ -444,6 +444,9 @@ async function router(req, res) {
   if (pathname === '/admin' || pathname === '/admin.html') {
     return serveFile(res, path.join(__dirname, 'admin.html'));
   }
+  if (pathname === '/price' || pathname === '/price.html') {
+    return serveFile(res, path.join(__dirname, 'price.html'));
+  }
   if (pathname === '/price-monitor' || pathname === '/price-monitor.html') {
     return serveFile(res, path.join(__dirname, 'price-monitor.html'));
   }
