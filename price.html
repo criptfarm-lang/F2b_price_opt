@@ -200,10 +200,9 @@ function render(data) {
 
   content.innerHTML = cats.map(cat => `
     <div class="category">
-      <div class="cat-title">${cat.name || 'Без названия'}</div>
       <table class="ptable">
         <thead><tr>
-          <th style="width:38%">Наименование</th>
+          <th style="width:38%">${cat.name || 'Без названия'}</th>
           <th style="width:32%">Артикул</th>
           <th style="width:8%">Ед.</th>
           <th class="r" style="width:12%">Цена, ₽</th>
