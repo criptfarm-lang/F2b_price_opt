@@ -648,21 +648,47 @@ async function router(req, res) {
       const firstProd = prods.rows?.[0];
       const prodId = firstProd?.assortment?.meta?.href?.split('/').pop();
       if (!prodId) return sendErr(res, 'не найден продукт');
-      // Ищем в отчёте остатков
-      const stock = await msGet(`/report/stock/all?stockMode=all&limit=100&filter=product=https://api.moysklad.ru/api/remap/1.2/entity/product/${prodId}`);
-      const stockRow = stock.rows?.[0];
+      // Проверяем profit report за последние 3 месяца
+      const prod = await msGet(`/entity/product/${prodId}`);
+      const now = new Date();
+      const pad = n => String(n).padStart(2,'0');
+      const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth()-2, 1);
+      const dateFrom = threeMonthsAgo.getFullYear()+'-'+pad(threeMonthsAgo.getMonth()+1)+'-01';
+      const dateTo   = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+
+      let profitRow = null;
+      let offset2 = 0;
+      while (!profitRow) {
+        const report = await msGet(
+          `/report/profit/byproduct?momentFrom=${dateFrom}%2000%3A00%3A00&momentTo=${dateTo}%2023%3A59%3A59&limit=1000&offset=${offset2}`
+        );
+        const rows = report.rows || [];
+        profitRow = rows.find(r => {
+          const href = r.assortment?.meta?.href || '';
+          return href.includes(prodId);
+        });
+        if (rows.length < 1000) break;
+        offset2 += 1000;
+      }
+
+      if (!profitRow) return sendJSON(res, { error: 'товар не найден в profit report', prodId, productName: prod.name });
+
+      const sellQty  = profitRow.sellQuantity || 0;
+      const sellSum  = profitRow.sellSum  ? profitRow.sellSum  / 100 : 0;
+      const costSum  = profitRow.costSum  ? profitRow.costSum  / 100 : 0;
+      const avgPrice = sellQty > 0 ? sellSum / sellQty : null;
+      const avgCost  = sellQty > 0 ? costSum / sellQty : null;
+
       return sendJSON(res, {
-        processingName: doc.name,
-        productId: prodId,
-        stockFields: stockRow ? {
-          name: stockRow.name,
-          stock: stockRow.stock,
-          price: stockRow.price,
-          priceRubles: stockRow.price ? stockRow.price / 100 : null,
-          avgCost: stockRow.avgCost,
-          avgCostRubles: stockRow.avgCost ? stockRow.avgCost / 100 : null,
-          allFields: Object.keys(stockRow)
-        } : 'not found'
+        productName: prod.name,
+        productCode: prod.code,
+        period: { from: dateFrom, to: dateTo },
+        sellQuantity: sellQty,
+        sellSum: Math.round(sellSum),
+        costSum: Math.round(costSum),
+        avgSellPrice: avgPrice ? Math.round(avgPrice * 100) / 100 : null,
+        avgCostPerUnit: avgCost ? Math.round(avgCost * 100) / 100 : null,
+        rawRow: profitRow
       });
     } catch (e) { return sendErr(res, e.message); }
   }
