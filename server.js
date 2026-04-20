@@ -329,12 +329,15 @@ async function getSalesData(dateFrom, dateTo) {
         const cost  = msVal(pos.cost)  || 0;
         const price = msVal(pos.price) || 0;
         const qty   = pos.quantity     || 0;
+        // Берём только реальные продажи: положительное кол-во, цена и себестоимость
         if (qty <= 0) continue;
-        if (!result[id] && price > 0) result[id] = { avgPrice: price, qty };
-        if (cost > 0) {
-          if (!costByProduct[id]) costByProduct[id] = [];
-          costByProduct[id].push({ cost, moment });
-        }
+        if (price <= 0) continue;  // пропускаем нулевые/отрицательные цены (возвраты, корректировки)
+        if (cost <= 0) continue;   // пропускаем нулевую/отрицательную себестоимость
+        // Проверка на абсурдное соотношение: себест. не может быть > цены * 3
+        if (cost > price * 3) continue;
+        if (!result[id]) result[id] = { avgPrice: price, qty };
+        if (!costByProduct[id]) costByProduct[id] = [];
+        costByProduct[id].push({ cost, moment });
       }
     }
     Object.keys(costByProduct).forEach(id => {
