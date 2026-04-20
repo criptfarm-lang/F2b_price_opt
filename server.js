@@ -641,18 +641,28 @@ async function router(req, res) {
     try {
       const id = query.id || '';
       if (!id) return sendErr(res, 'нужен id');
-      // Возвращаем сырой документ без expand
+      // Считаем себестоимость из материалов
       const doc = await msGet(`/entity/processing/${id}`);
+      const mats = await msGet(`/entity/processing/${id}/materials`);
+      const matRows = mats.rows || [];
+      const totalMat = matRows.reduce((sum, m) => {
+        const price = m.price || 0;
+        const qty   = m.quantity || 0;
+        return sum + (price / 100) * qty;
+      }, 0);
+      const costPerUnit = doc.quantity > 0 ? totalMat / doc.quantity : null;
       return sendJSON(res, {
-        id: doc.id,
         name: doc.name,
-        moment: doc.moment,
-        applicable: doc.applicable,
         quantity: doc.quantity,
-        processingSum: doc.processingSum,
-        processingSumRubles: doc.processingSum ? doc.processingSum / 100 : null,
-        costPerUnit: (doc.processingSum && doc.quantity) ? (doc.processingSum / 100) / doc.quantity : null,
-        allFields: Object.keys(doc)
+        totalMaterialsCost: Math.round(totalMat),
+        costPerUnit: costPerUnit ? Math.round(costPerUnit * 100) / 100 : null,
+        materials: matRows.map(m => ({
+          name: m.assortment?.name,
+          qty: m.quantity,
+          price: m.price ? m.price / 100 : null,
+          sum: m.price && m.quantity ? Math.round((m.price / 100) * m.quantity) : null,
+          allFields: Object.keys(m)
+        }))
       });
     } catch (e) { return sendErr(res, e.message); }
   }
