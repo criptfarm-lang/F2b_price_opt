@@ -636,6 +636,16 @@ async function router(req, res) {
     } catch (e) { return sendErr(res, e.message); }
   }
 
+  // GET /api/debug/processing-doc?id=XXX — конкретный документ техоперации
+  if (pathname === '/api/debug/processing-doc' && req.method === 'GET') {
+    try {
+      const id = query.id || '';
+      if (!id) return sendErr(res, 'нужен id');
+      const doc = await msGet(`/entity/processing/${id}?expand=products,materials`);
+      return sendJSON(res, doc);
+    } catch (e) { return sendErr(res, e.message); }
+  }
+
   // GET /api/debug/processing?code=XXX — техоперации по товару
   if (pathname === '/api/debug/processing' && req.method === 'GET') {
     try {
@@ -645,14 +655,13 @@ async function router(req, res) {
       const p  = pr.rows?.find(x => x.code === code || x.article === code) || pr.rows?.[0];
       if (!p) return sendErr(res, 'товар не найден');
       // Берём последние техоперации со статусом "Проверено" (state = Checked)
+      // Пробуем /entity/processing — техоперации (выпуск продукции)
       const ops = await msGet(
-        `/entity/processingorder?filter=applicable=true&limit=5&order=moment,desc`
+        `/entity/processing?filter=applicable=true&limit=10&order=moment,desc&expand=products`
       );
-      // Ищем техоперации где есть наш товар в products (результатах)
       const found = [];
       for (const op of (ops.rows || [])) {
-        const full = await msGet(`/entity/processingorder/${op.id}?expand=products,materials`);
-        const prods = full.products?.rows || [];
+        const prods = op.products?.rows || op.products || [];
         const match = prods.find(x => {
           const href = x.assortment?.meta?.href || '';
           return href.includes(p.id);
@@ -670,7 +679,9 @@ async function router(req, res) {
         }
         if (found.length >= 5) break;
       }
-      return sendJSON(res, { product: { id: p.id, name: p.name, code: p.code }, processingOrders: found });
+      // Если не нашли — вернём сырой первый документ для анализа структуры
+      const raw = ops.rows?.[0] || null;
+      return sendJSON(res, { product: { id: p.id, name: p.name, code: p.code }, processingOrders: found, rawSample: raw });
     } catch (e) { return sendErr(res, e.message); }
   }
 
