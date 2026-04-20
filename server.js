@@ -591,6 +591,26 @@ async function router(req, res) {
 
   // ── Debug ─────────────────────────────────────────────────────────────────
 
+  // GET /api/debug/processingorder?code=XXX — техоперации по товару
+  if (pathname === '/api/debug/processingorder' && req.method === 'GET') {
+    try {
+      const code = query.code || '';
+      // Найти товар по коду
+      const pr = await msGet(`/entity/product?search=${encodeURIComponent(code)}&limit=5`);
+      const p  = pr.rows?.find(x => x.code === code || x.article === code) || pr.rows?.[0];
+      if (!p) return sendErr(res, 'товар не найден');
+      // Получить последние техоперации со статусом Проверено
+      const ops = await msGet(`/entity/processingorder?filter=applicable=true&limit=5&order=moment,desc`);
+      // Также попробуем через processing (выполненные техоперации)
+      const proc = await msGet(`/entity/processing?limit=5&order=moment,desc`);
+      return sendJSON(res, {
+        product: { id: p.id, name: p.name, code: p.code },
+        processingOrderSample: ops.rows?.slice(0,2),
+        processingSample: proc.rows?.slice(0,2),
+      });
+    } catch(e) { return sendErr(res, e.message); }
+  }
+
   if (pathname === '/api/debug/stores' && req.method === 'GET') {
     try {
       const r = await msGet('/entity/store');
@@ -613,6 +633,44 @@ async function router(req, res) {
       if (!p) return sendErr(res, 'не найден');
       const sr   = await msGet('/report/stock/all?stockMode=all&limit=5');
       return sendJSON(res, { product: { id: p.id, name: p.name, code: p.code }, sampleStockRows: sr.rows, total: sr.meta?.size });
+    } catch (e) { return sendErr(res, e.message); }
+  }
+
+  // GET /api/debug/processing?code=XXX — техоперации по товару
+  if (pathname === '/api/debug/processing' && req.method === 'GET') {
+    try {
+      const code = query.code || '';
+      // Ищем товар
+      const pr = await msGet(`/entity/product?search=${encodeURIComponent(code)}&limit=5`);
+      const p  = pr.rows?.find(x => x.code === code || x.article === code) || pr.rows?.[0];
+      if (!p) return sendErr(res, 'товар не найден');
+      // Берём последние техоперации со статусом "Проверено" (state = Checked)
+      const ops = await msGet(
+        `/entity/processingorder?filter=applicable=true&limit=5&order=moment,desc`
+      );
+      // Ищем техоперации где есть наш товар в products (результатах)
+      const found = [];
+      for (const op of (ops.rows || [])) {
+        const full = await msGet(`/entity/processingorder/${op.id}?expand=products,materials`);
+        const prods = full.products?.rows || [];
+        const match = prods.find(x => {
+          const href = x.assortment?.meta?.href || '';
+          return href.includes(p.id);
+        });
+        if (match) {
+          found.push({
+            id: op.id,
+            moment: op.moment,
+            applicable: op.applicable,
+            product: match.assortment?.name,
+            quantity: match.quantity,
+            price: match.price,
+            priceRubles: match.price ? match.price / 100 : null
+          });
+        }
+        if (found.length >= 5) break;
+      }
+      return sendJSON(res, { product: { id: p.id, name: p.name, code: p.code }, processingOrders: found });
     } catch (e) { return sendErr(res, e.message); }
   }
 
