@@ -641,9 +641,19 @@ async function router(req, res) {
     try {
       const id = query.id || '';
       if (!id) return sendErr(res, 'нужен id');
-      // Возвращаем сырые данные продуктов
-      const prods = await msGet(`/entity/processing/${id}/products`);
-      return sendJSON(res, { rows: prods.rows });
+      // Возвращаем сырой документ без expand
+      const doc = await msGet(`/entity/processing/${id}`);
+      return sendJSON(res, {
+        id: doc.id,
+        name: doc.name,
+        moment: doc.moment,
+        applicable: doc.applicable,
+        quantity: doc.quantity,
+        processingSum: doc.processingSum,
+        processingSumRubles: doc.processingSum ? doc.processingSum / 100 : null,
+        costPerUnit: (doc.processingSum && doc.quantity) ? (doc.processingSum / 100) / doc.quantity : null,
+        allFields: Object.keys(doc)
+      });
     } catch (e) { return sendErr(res, e.message); }
   }
 
