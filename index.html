@@ -7,21 +7,21 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#0f1117; --bg2:#161920; --bg3:#1e2230; --border:#2a2f3f;
-  --text:#e8eaf0; --text2:#8892a4; --text3:#4a5568;
-  --accent:#4f8ef7; --green:#34d399; --red:#f87171; --yellow:#fbbf24;
+  --bg:#f5f6f9; --bg2:#ffffff; --bg3:#f0f2f7; --border:#e2e6f0;
+  --text:#1a2744; --text2:#4a5568; --text3:#8898aa;
+  --accent:#2563eb; --green:#16a34a; --red:#dc2626; --yellow:#d97706;
   --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;min-height:100vh}
 
 /* HEADER */
-.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:16px;height:50px;position:sticky;top:0;z-index:100}
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);box-shadow:0 1px 8px rgba(26,39,68,.06);padding:0 20px;display:flex;align-items:center;gap:16px;height:50px;position:sticky;top:0;z-index:100}
 .logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.05em;white-space:nowrap}
 .vsep{width:1px;height:26px;background:var(--border)}
 .status{font-size:11px;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;gap:6px}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--text3)}
-.dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot.ok{background:var(--green);box-shadow:0 0 5px rgba(22,163,74,.4)}
 .dot.err{background:var(--red)}
 .dot.spin{background:var(--yellow);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
@@ -73,16 +73,16 @@ textarea.ptxt:focus{border-color:var(--accent)}
 /* TABLE */
 .twrap{padding:0 20px 24px;overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-thead th{background:var(--bg2);color:var(--text3);font-family:var(--mono);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;padding:7px 9px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:10;cursor:pointer;user-select:none}
+thead th{background:#ffffff;color:var(--text3);font-family:var(--mono);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;padding:7px 9px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:10;cursor:pointer;user-select:none}
 thead th:hover{color:var(--text2)}
 thead th.sorted{color:var(--accent)}
 tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
-tbody tr:hover{background:var(--bg2)}
+tbody tr:hover{background:#eef2ff}
 tbody tr.oos td{opacity:.5}
 td{padding:7px 9px;vertical-align:middle}
 
 /* GROUP ROW */
-.grow td{background:var(--bg3);color:var(--text2);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono);padding:5px 9px;border-top:1px solid var(--border);cursor:pointer;user-select:none}
+.grow td{background:#e8ecf5;color:#253460;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono);padding:5px 9px;border-top:1px solid var(--border);cursor:pointer;user-select:none}
 .grow td::before{content:'▾ '}
 .grow.collapsed td::before{content:'▸ '}
 
@@ -469,7 +469,7 @@ function buildRow(p) {
       ${p.code?`<div class="pcode">${esc(p.code)}</div>`:''}
     </td>
     <td><span class="stock ${p.stock>0?'in':'out'}">${p.stock>0?'● '+p.stock:'○ 0'}</span></td>
-    <td class="pcell">${p.costPrice>0?fmt(p.costPrice):'<span class="muted">—</span>'}</td>
+    <td class="pcell">${p.costPrice>0?fmtCost(p.costPrice):'<span class="muted">—</span>'}</td>
     ${pCells}
     <td class="pcell">${p.realPrice?fmt(p.realPrice):'<span class="muted">—</span>'}</td>
     <td class="mk ${rmkC}">${p.realMarkup!==null?(p.realMarkup>0?'+'+p.realMarkup+'%':p.realMarkup+'%'):'—'}</td>
@@ -704,6 +704,10 @@ function toast(msg, type='info') {
 function fmt(n) {
   if (n===null||n===undefined) return '—';
   return new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+' ₽';
+}
+function fmtCost(n) {
+  if (n===null||n===undefined||n===0) return '—';
+  return new Intl.NumberFormat('ru-RU',{minimumFractionDigits:0,maximumFractionDigits:0}).format(Math.round(n))+' ₽';
 }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>
