@@ -641,15 +641,9 @@ async function router(req, res) {
     try {
       const id = query.id || '';
       if (!id) return sendErr(res, 'нужен id');
-      // Запрашиваем продукты отдельно чтобы получить price
+      // Возвращаем сырые данные продуктов
       const prods = await msGet(`/entity/processing/${id}/products`);
-      return sendJSON(res, { products: prods.rows?.map(p => ({
-        id: p.id,
-        quantity: p.quantity,
-        price: p.price,
-        priceRubles: p.price ? p.price / 100 : null,
-        assortmentHref: p.assortment?.meta?.href
-      }))});
+      return sendJSON(res, { rows: prods.rows });
     } catch (e) { return sendErr(res, e.message); }
   }
 
