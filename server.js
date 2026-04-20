@@ -641,28 +641,28 @@ async function router(req, res) {
     try {
       const id = query.id || '';
       if (!id) return sendErr(res, 'нужен id');
-      // Считаем себестоимость из материалов
+      // Проверяем себестоимость из отчёта остатков по конкретному товару
       const doc = await msGet(`/entity/processing/${id}`);
-      const mats = await msGet(`/entity/processing/${id}/materials`);
-      const matRows = mats.rows || [];
-      const totalMat = matRows.reduce((sum, m) => {
-        const price = m.price || 0;
-        const qty   = m.quantity || 0;
-        return sum + (price / 100) * qty;
-      }, 0);
-      const costPerUnit = doc.quantity > 0 ? totalMat / doc.quantity : null;
+      // Берём id продукта из первого продукта техоперации
+      const prods = await msGet(`/entity/processing/${id}/products`);
+      const firstProd = prods.rows?.[0];
+      const prodId = firstProd?.assortment?.meta?.href?.split('/').pop();
+      if (!prodId) return sendErr(res, 'не найден продукт');
+      // Ищем в отчёте остатков
+      const stock = await msGet(`/report/stock/all?stockMode=all&limit=100&filter=product=https://api.moysklad.ru/api/remap/1.2/entity/product/${prodId}`);
+      const stockRow = stock.rows?.[0];
       return sendJSON(res, {
-        name: doc.name,
-        quantity: doc.quantity,
-        totalMaterialsCost: Math.round(totalMat),
-        costPerUnit: costPerUnit ? Math.round(costPerUnit * 100) / 100 : null,
-        materials: matRows.map(m => ({
-          name: m.assortment?.name,
-          qty: m.quantity,
-          price: m.price ? m.price / 100 : null,
-          sum: m.price && m.quantity ? Math.round((m.price / 100) * m.quantity) : null,
-          allFields: Object.keys(m)
-        }))
+        processingName: doc.name,
+        productId: prodId,
+        stockFields: stockRow ? {
+          name: stockRow.name,
+          stock: stockRow.stock,
+          price: stockRow.price,
+          priceRubles: stockRow.price ? stockRow.price / 100 : null,
+          avgCost: stockRow.avgCost,
+          avgCostRubles: stockRow.avgCost ? stockRow.avgCost / 100 : null,
+          allFields: Object.keys(stockRow)
+        } : 'not found'
       });
     } catch (e) { return sendErr(res, e.message); }
   }
