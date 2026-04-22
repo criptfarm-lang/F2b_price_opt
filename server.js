@@ -216,16 +216,35 @@ function median(arr) {
 }
 
 function trimmedAvg(values) {
-  // Убираем отрицательные и нулевые значения
+  // Убираем нули и отрицательные
   const positive = values.filter(v => v > 0);
   if (!positive.length) return null;
   if (positive.length === 1) return positive[0];
   const med = median(positive);
   if (med === 0) return null;
-  // Фильтруем экстремумы: отклонение не более 50% от медианы
-  const filtered = positive.filter(v => Math.abs(v - med) / med <= 0.50);
+  // Откидываем экстремумы: отклонение > 80% от медианы
+  const filtered = positive.filter(v => Math.abs(v - med) / med <= 0.80);
   if (!filtered.length) return med;
   return filtered.reduce((a, b) => a + b, 0) / filtered.length;
+}
+
+// Алгоритм: последние 4 ненулевых значения без экстремумов
+function last4avg(sortedCosts) {
+  // sortedCosts — массив {cost, moment} отсортированный по дате desc
+  // 1. Откидываем нули и отрицательные
+  const positive = sortedCosts.filter(x => x.cost > 0);
+  if (!positive.length) return null;
+  // 2. Считаем медиану для определения экстремумов
+  const values = positive.map(x => x.cost);
+  const med = median(values);
+  if (med === 0) return null;
+  // 3. Откидываем экстремумы > 80% отклонения от медианы
+  const clean = positive.filter(x => Math.abs(x.cost - med) / med <= 0.80);
+  if (!clean.length) return med;
+  // 4. Берём последние 4 из очищенных (уже отсортированы desc по дате)
+  const last4 = clean.slice(0, 4);
+  const avg = last4.reduce((s, x) => s + x.cost, 0) / last4.length;
+  return avg;
 }
 
 function buildProduct(p, stockMap, costMap, salesThis, salesLast, salesOlder, priceTypes) {
@@ -334,26 +353,36 @@ async function getSalesData(dateFrom, dateTo) {
         if (qty <= 0) continue;
         if (price <= 0) continue;  // пропускаем нулевые/отрицательные цены (возвраты, корректировки)
         if (cost <= 0) continue;   // пропускаем нулевую/отрицательную себестоимость
-        // Проверка на абсурдное соотношение: себест. не может быть > цены * 3
+        // Фильтр абсурдных соотношений:
+        // себест. не может быть > цены * 3 (верхняя граница)
         if (cost > price * 3) continue;
+        // себест. не может быть < 10% от цены продажи (нижняя граница — отсекаем мусор)
+        if (cost < price * 0.10) continue;
         if (!result[id]) result[id] = { avgPrice: price, qty };
         if (!costByProduct[id]) costByProduct[id] = [];
         costByProduct[id].push({ cost, moment });
       }
     }
+    // Применяем last4avg: последние 4 ненулевых без экстремумов
     Object.keys(costByProduct).forEach(id => {
       const sorted = costByProduct[id].sort((a, b) => b.moment.localeCompare(a.moment));
-      const recent = sorted.slice(0, 10).map(x => x.cost);
-      if (!costSamples[id]) costSamples[id] = [];
-      costSamples[id].push(...recent);
+      const avg = last4avg(sorted);
+      if (avg !== null && avg > 0) {
+        if (!result[id]) result[id] = { avgPrice: 0, qty: 0 };
+        result[id].avgCost = avg;
+      }
     });
   } catch (e) { console.warn('Demands expand failed:', e.message); }
 
+  // Profit report: тоже применяем trimmedAvg к costSamples
   Object.keys(costSamples).forEach(id => {
-    const avg = trimmedAvg(costSamples[id]);
-    if (avg !== null && avg > 0) {
-      if (!result[id]) result[id] = { avgPrice: 0, qty: 0 };
-      result[id].avgCost = avg;
+    // Только если из отгрузок не получили avgCost
+    if (!result[id]?.avgCost) {
+      const avg = trimmedAvg(costSamples[id]);
+      if (avg !== null && avg > 0) {
+        if (!result[id]) result[id] = { avgPrice: 0, qty: 0 };
+        result[id].avgCost = avg;
+      }
     }
   });
 
@@ -407,22 +436,23 @@ async function loadMSData() {
     console.log('Stock loaded:', Object.keys(stockMap).length);
   } catch (e) { console.warn('Stock report failed:', e.message); }
 
-  // 4. Sales
+  // 4. Sales — скользящее окно 30 дней для факт. цены, 90 дней для себестоимости
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
-  const thisMonthStart  = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
-  const today           = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const lastMonth       = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthStart  = `${lastMonth.getFullYear()}-${pad(lastMonth.getMonth() + 1)}-01`;
-  const lastMonthEnd    = new Date(now.getFullYear(), now.getMonth(), 0);
-  const lastMonthEndStr = `${lastMonthEnd.getFullYear()}-${pad(lastMonthEnd.getMonth() + 1)}-${pad(lastMonthEnd.getDate())}`;
-  const threeMonthsAgo  = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  const threeMonthsStart= `${threeMonthsAgo.getFullYear()}-${pad(threeMonthsAgo.getMonth() + 1)}-01`;
+  const fmtDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 
+  const today        = fmtDate(now);
+  const days30ago    = new Date(now); days30ago.setDate(now.getDate() - 30);
+  const days60ago    = new Date(now); days60ago.setDate(now.getDate() - 60);
+  const days90ago    = new Date(now); days90ago.setDate(now.getDate() - 40);
+
+  // salesThis  — последние 30 дней (факт. цена + себест.)
+  // salesLast  — 31-60 дней назад (для delta наценки)
+  // salesOlder — 61-90 дней назад (резерв себестоимости)
   const [salesThis, salesLast, salesOlder] = await Promise.all([
-    getSalesData(thisMonthStart, today).catch(() => ({})),
-    getSalesData(lastMonthStart, lastMonthEndStr).catch(() => ({})),
-    getSalesData(threeMonthsStart, lastMonthStart).catch(() => ({}))
+    getSalesData(fmtDate(days30ago), today).catch(() => ({})),
+    getSalesData(fmtDate(days60ago), fmtDate(days30ago)).catch(() => ({})),
+    getSalesData(fmtDate(days90ago), fmtDate(days60ago)).catch(() => ({})) // 40 дней макс
   ]);
 
   // 5. Build
@@ -657,10 +687,12 @@ async function router(req, res) {
       const dateFrom = threeMonthsAgo.getFullYear()+'-'+pad(threeMonthsAgo.getMonth()+1)+'-01';
       const dateTo   = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
 
-      // Берём последние 20 отгрузок без фильтра
-      const demands = await msGet(`/entity/demand?limit=20&order=moment,desc&expand=positions`);
+      // Ищем отгрузки напрямую с фильтром по товару
+      const demandsByProduct = await msGet(
+        `/entity/demand?limit=10&order=moment,desc&filter=positions.assortment=https://api.moysklad.ru/api/remap/1.2/entity/product/${prodId}&expand=positions`
+      );
       const found = [];
-      for (const d of (demands.rows || [])) {
+      for (const d of (demandsByProduct.rows || [])) {
         const positions = d.positions?.rows || [];
         for (const pos of positions) {
           const href = pos.assortment?.meta?.href || '';
@@ -678,7 +710,7 @@ async function router(req, res) {
       return sendJSON(res, {
         productName: prod.name,
         productCode: prod.code,
-        demandsChecked: (demands.rows||[]).length,
+        totalDemands: demandsByProduct.meta?.size,
         found
       });
     } catch (e) { return sendErr(res, e.message); }
